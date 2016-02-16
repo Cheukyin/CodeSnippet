@@ -1,10 +1,10 @@
 #lang racket
 (define (qsort num-list)
   (match num-list
-      ['() '()]
-      [_   (append (qsort (filter (λ (x) (< x (car num-list)))  (cdr num-list)))
-                   (list (car num-list))
-                   (qsort (filter (λ (x) (>= x (car num-list))) (cdr num-list))))]))
+    ['()        '()]
+    [(cons n l) (append (qsort (filter (λ (x) (< x n)) l))
+                        (list n)
+                        (qsort (filter (λ (x) (>= x n)) l)))]))
 
 
 (require rackunit rackunit/text-ui)
