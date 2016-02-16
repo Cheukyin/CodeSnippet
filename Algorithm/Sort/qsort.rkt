@@ -1,24 +1,10 @@
 #lang racket
 (define (qsort num-list)
-  (if (= 0 (length num-list))
-      num-list
-      (let ((two-intervals (partition (cdr num-list) (car num-list))))
-        (append (qsort (car two-intervals))
-                (list (car num-list))
-                (qsort (cdr two-intervals))
-                ))))
-
-(define (partition num-list num)
-  (if (= 0 (length num-list))
-      (cons '() '())
-      (let ((first-num (car num-list))
-            (parted-intervals (partition (cdr num-list) num)))
-        (if (< first-num num)
-            (cons (append (car parted-intervals) (list first-num))
-                  (cdr parted-intervals))
-            (cons (car parted-intervals)
-                  (append (cdr parted-intervals) (list first-num)))))
-      ))
+  (match num-list
+      ['() '()]
+      [_   (append (qsort (filter (λ (x) (< x (car num-list)))  (cdr num-list)))
+                   (list (car num-list))
+                   (qsort (filter (λ (x) (>= x (car num-list))) (cdr num-list))))]))
 
 
 (require rackunit rackunit/text-ui)
