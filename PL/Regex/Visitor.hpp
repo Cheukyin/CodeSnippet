@@ -9,6 +9,7 @@ namespace RE
 
     struct Visitor
     {
+        virtual void visit(RegexPtr& re) = 0;
         virtual void visit(EmptyPtr& re) = 0;
         virtual void visit(NullPtr&  re) = 0;
         virtual void visit(CharPtr&  re) = 0;

@@ -3,16 +3,23 @@
 
 #include "Visitor.hpp"
 
-
-
 #define DynASTDumpCast(ptr) (std::dynamic_pointer_cast<ASTDump>(ptr))
 
 namespace RE
 {
-    class ASTDump: public Visitor, public std::enable_shared_from_this<ASTDump>
+    struct ASTDump: public Visitor, public std::enable_shared_from_this<ASTDump>
     {
-    public:
         string tree;
+
+        string dump(RegexPtr& re)
+        {
+            tree = "";
+            visit(re);
+            return tree;
+        }
+
+        void visit(RegexPtr& re) override
+        { re->accept( shared_from_this() ); }
 
         void visit(EmptyPtr& re) override
         { tree += "(Empty)"; }
