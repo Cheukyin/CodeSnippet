@@ -14,9 +14,9 @@ namespace RE
 
         string search(const string& str)
         { 
-            for (StrType i = 0; i < str.size(); i++)
+            for (StrSizeType i = 0; i < str.size(); i++)
             {
-                StrType tail = searchHelper(rePtr, str, i);
+                StrSizeType tail = searchHelper(rePtr, str, i);
                 if(tail > i) return string(str.begin()+i, str.begin()+tail);
             }
             return "";
@@ -30,18 +30,18 @@ namespace RE
         RegexPtr rePtr;
         DerivativePtr deri;
         NullCheckPtr containNull;
-        using StrType = string::size_type;
+        using StrSizeType = string::size_type;
 
-        StrType searchHelper(RegexPtr L, const string& str, StrType id)
+        StrSizeType searchHelper(RegexPtr L, const string& str, StrSizeType id)
         {
-            StrType result = containNull->check(L) ? id : 0;
+            StrSizeType result = containNull->check(L) ? id : 0;
             if (id >= str.size()) return result;
 
-            StrType tmp = searchHelper(deri->drv(L, str[id]), str, id + 1);
+            StrSizeType tmp = searchHelper(deri->drv(L, str[id]), str, id + 1);
             return result < tmp ? tmp : result;
         }
 
-        bool matchHelper(RegexPtr L, const string& str, StrType id)
+        bool matchHelper(RegexPtr L, const string& str, StrSizeType id)
         {
             if (id >= str.size()) return containNull->check(L);
             return matchHelper(deri->drv(L, str[id]), str, id + 1);
