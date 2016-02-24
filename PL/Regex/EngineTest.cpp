@@ -23,4 +23,9 @@ TEST_CASE(EngineTest)
     EXPECT_TRUE(eng3.match("21-3-456-67"));
     EXPECT_FALSE(eng3.match("21-3-67"));
     EXPECT_EQ(eng3.search("sfe890-21-34-456-34-23"), "21-34-456-34");
+
+    Engine eng4(".{3}(a.)+.");
+    EXPECT_TRUE(eng4.match("a3ca8a;."));
+    EXPECT_FALSE(eng4.match("a3ca8b;."));
+    EXPECT_EQ(eng4.search("w323ds123aaeavw"), "123aae");
 }

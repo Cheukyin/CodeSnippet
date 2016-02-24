@@ -63,6 +63,7 @@ namespace RE
         // D(Empty, c) = Empty
         // D(Null, c) = Empty
         // D(c, c) = Null
+        // D('.', c) = Null
         // D(c', c) = Empty, if c' != c
 
         // D(<Alt L R>, c) = <Alt D(L, c) D(R, c)>
@@ -92,9 +93,10 @@ namespace RE
         { r = EmptyPtr(new Empty); }
 
         void visit(const CharPtr& re) override
-        { 
-            if (re->ch == c) r = NullPtr(new Null);
-            else             r = EmptyPtr(new Empty); 
+        {
+            if (re->ch == c)        r = NullPtr(new Null);
+            else if (re->ch == '.') r = NullPtr(new Null);
+            else                    r = EmptyPtr(new Empty);
         }
 
         void visit(const AltPtr& re) override
