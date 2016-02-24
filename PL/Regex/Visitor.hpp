@@ -9,13 +9,13 @@ namespace RE
 
     struct Visitor
     {
-        virtual void visit(RegexPtr& re) = 0;
-        virtual void visit(EmptyPtr& re) = 0;
-        virtual void visit(NullPtr&  re) = 0;
-        virtual void visit(CharPtr&  re) = 0;
-        virtual void visit(AltPtr&   re) = 0;
-        virtual void visit(SeqPtr&   re) = 0;
-        virtual void visit(RepPtr&   re) = 0;
+        virtual void visit(const RegexPtr& re) = 0;
+        virtual void visit(const EmptyPtr& re) = 0;
+        virtual void visit(const NullPtr&  re) = 0;
+        virtual void visit(const CharPtr&  re) = 0;
+        virtual void visit(const AltPtr&   re) = 0;
+        virtual void visit(const SeqPtr&   re) = 0;
+        virtual void visit(const RepPtr&   re) = 0;
     };
 
 } // namespace RE

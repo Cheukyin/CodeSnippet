@@ -11,26 +11,26 @@ namespace RE
     {
         string tree;
 
-        string dump(RegexPtr& re)
+        string dump(const RegexPtr& re)
         {
             tree = "";
             visit(re);
             return tree;
         }
 
-        void visit(RegexPtr& re) override
+        void visit(const RegexPtr& re) override
         { re->accept( shared_from_this() ); }
 
-        void visit(EmptyPtr& re) override
+        void visit(const EmptyPtr& re) override
         { tree += "(Empty)"; }
 
-        void visit(NullPtr& re) override
+        void visit(const NullPtr& re) override
         { tree += "(Null)"; }
 
-        void visit(CharPtr& re) override
+        void visit(const CharPtr& re) override
         { tree += ("(Char " + string(1, re->ch) + ")"); }
 
-        void visit(AltPtr& re) override
+        void visit(const AltPtr& re) override
         {
             tree += "(Alt ";
             re->left->accept( shared_from_this() );
@@ -39,7 +39,7 @@ namespace RE
             tree += ")";
         }
 
-        void visit(SeqPtr& re) override
+        void visit(const SeqPtr& re) override
         {
             tree += "(Seq ";
             re->first->accept( shared_from_this() );
@@ -48,7 +48,7 @@ namespace RE
             tree += ")";
         }
 
-        void visit(RepPtr& re) override
+        void visit(const RepPtr& re) override
         {
             tree += "(Rep ";
             re->re->accept( shared_from_this() );

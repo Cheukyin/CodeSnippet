@@ -16,25 +16,25 @@ namespace RE
 
         bool containNull;
 
-        bool check(RegexPtr& re)
+        bool check(const RegexPtr& re)
         {
             visit(re);
             return containNull;
         }
 
-        void visit(RegexPtr& re) override
+        void visit(const RegexPtr& re) override
         { re->accept( shared_from_this() ); }
 
-        void visit(EmptyPtr& re) override
+        void visit(const EmptyPtr& re) override
         { containNull = false; }
 
-        void visit(NullPtr& re) override
+        void visit(const NullPtr& re) override
         { containNull = true; }
 
-        void visit(CharPtr& re) override
+        void visit(const CharPtr& re) override
         { containNull = false; }
 
-        void visit(AltPtr& re) override
+        void visit(const AltPtr& re) override
         {
             re->left->accept( shared_from_this() );
             bool leftContainNull = containNull;
@@ -43,7 +43,7 @@ namespace RE
             containNull =  containNull || leftContainNull;
         }
 
-        void visit(SeqPtr& re) override
+        void visit(const SeqPtr& re) override
         {
             re->first->accept( shared_from_this() );
             bool leftContainNull = containNull;
@@ -52,7 +52,7 @@ namespace RE
             containNull = containNull && leftContainNull;
         }
 
-        void visit(RepPtr& re) override
+        void visit(const RepPtr& re) override
         { containNull = true; }
     };
     
@@ -74,7 +74,7 @@ namespace RE
         char c;
         NullCheckPtr containNull;
 
-        RegexPtr drv(RegexPtr& re, char ch)
+        RegexPtr drv(const RegexPtr& re, char ch)
         {
             containNull = NullCheckPtr(new NullCheck);
             r = re; c = ch;
@@ -82,22 +82,22 @@ namespace RE
             return r;
         }
 
-        void visit(RegexPtr& re) override
+        void visit(const RegexPtr& re) override
         { re->accept( shared_from_this() ); }
 
-        void visit(EmptyPtr& re) override
+        void visit(const EmptyPtr& re) override
         { r = EmptyPtr(new Empty); }
 
-        void visit(NullPtr& re) override
+        void visit(const NullPtr& re) override
         { r = EmptyPtr(new Empty); }
 
-        void visit(CharPtr& re) override
+        void visit(const CharPtr& re) override
         { 
             if (re->ch == c) r = NullPtr(new Null);
             else             r = EmptyPtr(new Empty); 
         }
 
-        void visit(AltPtr& re) override
+        void visit(const AltPtr& re) override
         {
             re->left->accept( shared_from_this() );
             RegexPtr l = r;
@@ -105,7 +105,7 @@ namespace RE
             r = AltPtr( new Alt(l, r) );
         }
 
-        void visit(SeqPtr& re) override
+        void visit(const SeqPtr& re) override
         {
             re->first->accept( shared_from_this() );
             r = SeqPtr(new Seq(r, re->last));
@@ -117,7 +117,7 @@ namespace RE
             }
         }
 
-        void visit(RepPtr& re) override
+        void visit(const RepPtr& re) override
         {
             re->re->accept( shared_from_this() );
             r = SeqPtr( new Seq(r, re) );
