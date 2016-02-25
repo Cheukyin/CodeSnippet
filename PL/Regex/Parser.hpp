@@ -14,9 +14,9 @@ namespace RE
         // <Regex>   ::=  <Seq> ( '|' <Regex> )?
         //                ""
         // <Seq>     ::=  <Factor> <Seq>?
-        // <Factor>  ::=  ( <ParenRe> | <CharSet> | <Char> ) <Op>*
+        // <Factor>  ::=  ( <CapturedRe> | <CharSet> | <Char> ) <Op>*
 
-        // <ParenRe> ::=  '(' <Regex> ')'
+        // <CapturedRe> ::=  '(' '?:'? <Regex> ')'
         // <CharSet> ::=  '[' <CharNotInclude]>* ']'
         // <Char>    ::=  <any single character>
         // <Op>      ::=  '*' | '+' | '?' | <Range>
@@ -33,7 +33,7 @@ namespace RE
         RegexPtr regex();
         RegexPtr seq();
         RegexPtr factor();
-        RegexPtr parenRe();
+        RegexPtr capturedRe();
         RegexPtr charSet();
         std::pair<int, int> range();
         int num();

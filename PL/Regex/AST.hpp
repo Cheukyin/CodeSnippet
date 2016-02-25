@@ -61,13 +61,22 @@ namespace RE
 
         Rep(const RegexPtr& re) :re(re) {}
     };
-    
+
+    struct Group : public Regex, public std::enable_shared_from_this<Group>
+    {
+        RegexPtr re;
+        void accept(const VisitorPtr& visitor) override;
+
+        Group(const RegexPtr& re) :re(re) {}
+    };
+
     using EmptyPtr = std::shared_ptr<Empty>;
     using NullPtr  = std::shared_ptr<Null>;
     using CharPtr  = std::shared_ptr<Char>;
     using AltPtr   = std::shared_ptr<Alt>;
     using SeqPtr   = std::shared_ptr<Seq>;
     using RepPtr   = std::shared_ptr<Rep>;
+    using GroupPtr = std::shared_ptr<Group>;
 
 } // namespace RE
 

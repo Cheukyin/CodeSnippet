@@ -16,6 +16,7 @@ namespace RE
         virtual void visit(const AltPtr&   re) = 0;
         virtual void visit(const SeqPtr&   re) = 0;
         virtual void visit(const RepPtr&   re) = 0;
+        virtual void visit(const GroupPtr& re) = 0;
     };
 
 } // namespace RE

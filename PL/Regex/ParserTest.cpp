@@ -43,20 +43,20 @@ TEST_CASE(ParserTest)
                                        "(Seq (Char e) "
                                             "(Seq (Char e) (Char e)))))");
 
-    re = "(ab|b)";
+    re = "(?:ab|b)";
     rePtr = parse(re);
     printer->tree = "";
     rePtr->accept(printer);
     EXPECT_EQ(printer->tree, "(Alt (Seq (Char a) (Char b)) (Char b))");
 
-    re = "a(ab|b)";
+    re = "a(?:ab|b)";
     rePtr = parse(re);
     printer->tree = "";
     rePtr->accept(printer);
     EXPECT_EQ(printer->tree, "(Seq (Char a) "
                                   "(Alt (Seq (Char a) (Char b)) (Char b)))");
 
-    re = "a(ab|b)c";
+    re = "a(?:ab|b)c";
     string re_res = "(Seq (Char a) "
                     "(Seq (Alt (Seq (Char a) (Char b)) (Char b)) (Char c)))";
     rePtr = parse(re);
@@ -73,7 +73,7 @@ TEST_CASE(ParserTest)
     rePtr->accept(printer);
     EXPECT_EQ(printer->tree, re1_res);
 
-    string re2 = "((" + re1 + ")|" + re + ")";
+    string re2 = "(?:(?:" + re1 + ")|" + re + ")";
     string re2_res = "(Alt " + re1_res + " " + re_res + ")";
     rePtr = parse(re2);
     printer->tree = "";
@@ -135,7 +135,7 @@ TEST_CASE(ParserTest)
     rePtr->accept(printer);
     EXPECT_EQ(printer->tree, re6_res);
 
-    re6 = re6 + "a|bc|(a|b*|c)c|a";
+    re6 = re6 + "a|bc|(?:a|b*|c)c|a";
     re6_res = "(Alt (Seq "+re6_res+
         " (Char a)) (Alt (Seq (Char b) (Char c)) (Alt (Seq (Alt (Char a) "
         "(Alt (Rep (Char b)) (Char c))) (Char c)) (Char a))))";

@@ -21,4 +21,7 @@ namespace RE
     void Rep::accept(const VisitorPtr& visitor)
     { visitor->visit( shared_from_this() ); }
 
+    void Group::accept(const VisitorPtr& visitor)
+    { visitor->visit( shared_from_this() ); }
+
 } // namespace RE

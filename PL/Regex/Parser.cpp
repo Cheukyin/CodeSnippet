@@ -31,7 +31,7 @@ namespace RE
     RegexPtr Parser::seq()
     {
         RegexPtr first = factor();
-        if (!*iter || *iter == '|' || *iter == ')') 
+        if (!*iter || *iter == '|' || *iter == ')')
             return first;
 
         RegexPtr last = seq();
@@ -43,9 +43,9 @@ namespace RE
     {
         RegexPtr re;
 
-        if (*iter == '(') 
-            re = parenRe();
-        else if (*iter == '[') 
+        if (*iter == '(')
+            re = capturedRe();
+        else if (*iter == '[')
             re = charSet();
         else if (*iter != '*' && *iter != '+' && *iter != '?' && *iter != '{')
         {
@@ -53,27 +53,27 @@ namespace RE
             iter++;
         }
         else abort();
-        
+
         while (1)
         {
             if(*iter == '*')
-            { 
-                re = RegexPtr( RepPtr(new Rep(re)) ); 
-                iter++; 
+            {
+                re = RegexPtr( RepPtr(new Rep(re)) );
+                iter++;
             }
             else if(*iter == '+')
-            { 
+            {
                 RegexPtr r( RepPtr(new Rep(re)) );
                 re = RegexPtr( SeqPtr(new Seq(re, r) ) );
-                iter++; 
+                iter++;
             }
             else if (*iter == '?')
             {
                 RegexPtr r( NullPtr(new Null) );
                 re = RegexPtr(AltPtr( new Alt(r, re) ) );
-                iter++; 
+                iter++;
             }
-            else if (*iter == '{') 
+            else if (*iter == '{')
             {
                 std::pair<int, int> r = range();
                 int r1 = r.first < r.second ? r.first : r.second;
@@ -126,12 +126,19 @@ namespace RE
         return std::pair<int, int>{n1, n2};
     }
 
-    RegexPtr Parser::parenRe()
+    RegexPtr Parser::capturedRe()
     {
         assert(*iter == '(');
         iter++;
 
-        RegexPtr re = regex();
+        RegexPtr re;
+        if(*iter == '?' && *(iter+1) == ':')
+        {
+            iter += 2;
+            re = regex();
+        }
+        else
+            re = GroupPtr( new Group( regex() ) );
 
         if (*iter != ')') abort();
         iter++;

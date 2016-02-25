@@ -54,8 +54,11 @@ namespace RE
 
         void visit(const RepPtr& re) override
         { containNull = true; }
+
+        void visit(const GroupPtr& re) override
+        { re->re->accept( shared_from_this() ); }
     };
-    
+
     using NullCheckPtr = std::shared_ptr<NullCheck>;
 
     struct Derivative : public Visitor, public std::enable_shared_from_this<Derivative>
@@ -124,6 +127,9 @@ namespace RE
             re->re->accept( shared_from_this() );
             r = SeqPtr( new Seq(r, re) );
         }
+
+        void visit(const GroupPtr& re) override
+        { re->re->accept( shared_from_this() ); }
     };
 
     using DerivativePtr = std::shared_ptr<Derivative>;

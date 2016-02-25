@@ -54,6 +54,13 @@ namespace RE
             re->re->accept( shared_from_this() );
             tree += ")";
         }
+
+        void visit(const GroupPtr& re) override
+        {
+            tree += "(Group ";
+            re->re->accept( shared_from_this() );
+            tree += ")";
+        }
     };
 
     using ASTDumpPtr = std::shared_ptr<ASTDump>;
