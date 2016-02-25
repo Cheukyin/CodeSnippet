@@ -10,6 +10,7 @@ namespace RE
     {
         if (!str.size()) return RegexPtr( NullPtr(new Null) );
         iter = str.begin();
+        group = 0;
         return regex();
     }
 
@@ -25,7 +26,7 @@ namespace RE
         if (!*iter || *iter == '|') abort();
         RegexPtr rre = regex();
 
-        return RegexPtr( AltPtr(new Alt(lre, rre)) );
+        return AltPtr(new Alt(lre, rre));
     }
 
     RegexPtr Parser::seq()
@@ -36,7 +37,7 @@ namespace RE
 
         RegexPtr last = seq();
 
-        return RegexPtr( SeqPtr( new Seq(first, last) ) );
+        return SeqPtr( new Seq(first, last) );
     }
 
     RegexPtr Parser::factor()
@@ -58,19 +59,19 @@ namespace RE
         {
             if(*iter == '*')
             {
-                re = RegexPtr( RepPtr(new Rep(re)) );
+                re = RepPtr(new Rep(re));
                 iter++;
             }
             else if(*iter == '+')
             {
                 RegexPtr r( RepPtr(new Rep(re)) );
-                re = RegexPtr( SeqPtr(new Seq(re, r) ) );
+                re = SeqPtr(new Seq(re, r) );
                 iter++;
             }
             else if (*iter == '?')
             {
                 RegexPtr r( NullPtr(new Null) );
-                re = RegexPtr(AltPtr( new Alt(r, re) ) );
+                re = AltPtr( new Alt(r, re) );
                 iter++;
             }
             else if (*iter == '{')
@@ -82,13 +83,13 @@ namespace RE
                 auto helper = [](int cnt, RegexPtr& re) ->RegexPtr {
                     RegexPtr tmp( NullPtr(new Null) );
                     for (int i = 0; i < cnt; i++)
-                        tmp = RegexPtr( SeqPtr(new Seq(re, tmp)) );
+                        tmp = SeqPtr(new Seq(re, tmp));
                     return tmp;
                 };
 
                 RegexPtr tmp( helper(r2, re) );
                 for (int i = r2-1; i >= r1; i--)
-                    tmp = RegexPtr( AltPtr(new Alt(helper(i, re), tmp )) );
+                    tmp = AltPtr(new Alt(helper(i, re), tmp ));
                 re = tmp;
              }
             else break;
@@ -138,7 +139,7 @@ namespace RE
             re = regex();
         }
         else
-            re = GroupPtr( new Group( regex() ) );
+            re = GroupPtr( new Group( regex(), ++group ) );
 
         if (*iter != ')') abort();
         iter++;
@@ -170,7 +171,7 @@ namespace RE
             chStack.pop();
 
             l = CharPtr(new Char(ch));
-            re = RegexPtr( AltPtr(new Alt(l, re)) );
+            re = AltPtr(new Alt(l, re));
         }
 
         return re;

@@ -29,6 +29,7 @@ namespace RE
 
     private:
         string::const_iterator iter;
+        int group;
 
         RegexPtr regex();
         RegexPtr seq();

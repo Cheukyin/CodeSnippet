@@ -1,6 +1,7 @@
 #include "Parser.hpp"
 #include "ASTDump.hpp"
 #include "UnitTest.hpp"
+#include "NFA.hpp"
 
 using namespace RE;
 

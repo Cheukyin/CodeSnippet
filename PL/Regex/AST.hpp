@@ -65,9 +65,10 @@ namespace RE
     struct Group : public Regex, public std::enable_shared_from_this<Group>
     {
         RegexPtr re;
+        int group;
         void accept(const VisitorPtr& visitor) override;
 
-        Group(const RegexPtr& re) :re(re) {}
+        Group(const RegexPtr& re, int g) :re(re), group(g) {}
     };
 
     using EmptyPtr = std::shared_ptr<Empty>;

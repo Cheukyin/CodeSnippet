@@ -106,7 +106,7 @@ namespace RE
         {
             re->left->accept( shared_from_this() );
             RegexPtr l = r;
-            re->right->accept(shared_from_this());
+            re->right->accept( shared_from_this() );
             r = AltPtr( new Alt(l, r) );
         }
 
