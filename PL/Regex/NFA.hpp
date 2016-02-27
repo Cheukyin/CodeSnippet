@@ -1,6 +1,7 @@
 #ifndef REGEX_NFA_H
 #define REGEX_NFA_H
 
+#include "Visitor.hpp"
 #include <memory>
 #include <vector>
 
@@ -8,7 +9,7 @@ namespace RE
 {
     struct Node;
     struct Edge;
-    using NodePtr = std::shared_ptr<Node>;
+    using NodePtr = Node*;
     using std::vector;
 
     struct Node
@@ -25,8 +26,7 @@ namespace RE
         char c;
         NodePtr node;
 
-        Edge() : c(0), node(new Node) {}
-        Edge(char ch, const NodePtr& n) : c(ch), node(n) {}
+        Edge(char ch, NodePtr n) : c(ch), node(n) {}
     };
 
     struct NFA
@@ -34,10 +34,17 @@ namespace RE
         NodePtr start;
         NodePtr end;
 
-        NFA(const NodePtr& s, const NodePtr& e) : start(s), end(e) {}
+        vector<NodePtr> nodes;
+
+        ~NFA()
+        {
+            NodePool* pool = NodePool::getPool();
+            for(NodePtr node : nodes)
+                pool->releaseObject(node);
+        }
     };
 
-    struct NFAConstructor : public Visitor, public std::enable_shared_from_this<NFAConstructor>
+    class NFAConstructor : public Visitor, public std::enable_shared_from_this<NFAConstructor>
     {
     private:
         NFA nfa;
@@ -45,6 +52,7 @@ namespace RE
     public:
         NFA construct(const RegexPtr& re)
         {
+            nfa = new NFA;
             visit(GroupPtr(re, 0));
             return nfa;
         }
@@ -92,7 +100,7 @@ namespace RE
             NFA fnfa = nfa;
             re->last->accept( shared_from_this() );
             fnfa.end->edges.push_back( Edge(0, nfa.start) );
-            
+
             nfa = NFA(fnfa.start, nfa.end);
         }
 
