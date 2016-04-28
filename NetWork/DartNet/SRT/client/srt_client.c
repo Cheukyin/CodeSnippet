@@ -30,18 +30,7 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-// srt client initialization
-//
-// This function initializes the TCB table marking all entries NULL. It also initializes
-// a global variable for the overlay TCP socket descriptor ‘‘conn’’ used as input parameter
-// for snp_sendseg and snp_recvseg. Finally, the function starts the seghandler thread to
-// handle the incoming segments. There is only one seghandler for the client side which
-// handles call connections for the client.
-//
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-//
-
-static client_tcb_t *tcbList = NULL;
+static client_tcb_t *tcbUsedList = NULL;
 static client_tcb_t *tcbFreeList = NULL;
 
 static void allocTCB()
@@ -50,6 +39,7 @@ static void allocTCB()
     {
         tcbFreeList = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
         tcbFreeList->state = CLOSED;
+        tcbFreeList->next = NULL;
     }
     for(int i=0; i < 9; i++)
     {
@@ -62,7 +52,12 @@ static void allocTCB()
 
 static void inserIntoList(client_tcb_t *lh, client_tcb_t *node)
 {
-    assert(lh);
+    if(!lh)
+    {
+        lh = node;
+        node->next = NULL;
+        return;
+    }
     client_tcb_t *n = lh->next;
     lh->next = node;
     node->next = n;
@@ -70,14 +65,29 @@ static void inserIntoList(client_tcb_t *lh, client_tcb_t *node)
 
 static client_tcb_t* takeFromFreeListHead(client_tcb_t *lh)
 {
-    assert(lh);
+    if(!lh) allocTCB();
     tcbFreeList = lh->next;
     return lh;
 }
 
-void srt_client_init(int conn) {
-    if(!tcbFreeList)
-  return;
+
+// srt client initialization
+//
+// This function initializes the TCB table marking all entries NULL. It also initializes
+// a global variable for the overlay TCP socket descriptor ‘‘conn’’ used as input parameter
+// for snp_sendseg and snp_recvseg. Finally, the function starts the seghandler thread to
+// handle the incoming segments. There is only one seghandler for the client side which
+// handles call connections for the client.
+//
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+//
+
+static int overlayConn;
+
+void srt_client_init(int conn)
+{
+    overlayConn = conn;
+    return;
 }
 
 // Create a client tcb, return the sock
