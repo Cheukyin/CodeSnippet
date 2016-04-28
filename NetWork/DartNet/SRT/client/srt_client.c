@@ -38,35 +38,44 @@ static void allocTCB()
     if(!tcbFreeList)
     {
         tcbFreeList = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
-        tcbFreeList->state = CLOSED;
         tcbFreeList->next = NULL;
     }
     for(int i=0; i < 9; i++)
     {
         client_tcb_t *tcbNode = tcbFreeList->next;
         tcbFreeList->next = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
-        tcbFreeList->next->state = CLOSED;
         tcbFreeList->next->next = tcbNode;
     }
 }
 
-static void inserIntoList(client_tcb_t *lh, client_tcb_t *node)
+static void inserIntoList(client_tcb_t **lh, client_tcb_t *node)
 {
-    if(!lh)
+    if(!*lh)
     {
-        lh = node;
+        *lh = node;
         node->next = NULL;
         return;
     }
-    client_tcb_t *n = lh->next;
-    lh->next = node;
+    client_tcb_t *n = (*lh)->next;
+    (*lh)->next = node;
     node->next = n;
+}
+
+static client_tcb_t* removeFromUsedList(client_tcb_t *node)
+{
+    assert(node);
+    if(tcbUsedList == node)
+    {
+        tcbUsedList = tcbUsedList->next;
+        return node;
+    }
 }
 
 static client_tcb_t* takeFromFreeListHead(client_tcb_t *lh)
 {
     if(!lh) allocTCB();
-    tcbFreeList = lh->next;
+    if(!tcbFreeList) return NULL;
+    tcbFreeList = tcbFreeList->next;
     return lh;
 }
 
@@ -102,8 +111,10 @@ void srt_client_init(int conn)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_sock(unsigned int client_port) {
-  return 0;
+int srt_client_sock(unsigned int client_port) 
+{
+    tcbFreeList->next->state = CLOSED;
+    return 0;
 }
 
 // Connect to a srt server
