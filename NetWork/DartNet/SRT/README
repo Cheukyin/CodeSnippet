@@ -1,0 +1,22 @@
+
+
+use make to build files.
+goto server directory, run ./app_server to start the server.
+goto client directory, run ./app_client to start the client, 
+you will input the server hostname to connect to the server.
+
+In client directory:
+	app_client.c - client application source file
+	srt_client.c - str client side  source file
+ 	srt_client.h - srt client header file	
+  We have provided skeleton srt_client.c and .h files, you need
+	to fill in the functions in the .c file to implement srt client 
+In sesrver directory:
+	app_server.c - server application source file
+	srt_server.c - srt server side source file
+	srt_server.h - srt server header file
+  We have provided skeleton srt_server.c and .h files, you need
+	to fill in the functions in the .c file to implement srt server
+In common directory:
+	seg.h - segment header file
+	seg.c - segment source file
