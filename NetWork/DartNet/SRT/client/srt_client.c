@@ -94,7 +94,6 @@ void srt_client_init(int conn)
     tcbFreeList->prev = tcbFreeList->next = NULL;
 
     overlayConn = conn;
-    return;
 }
 
 // Create a client tcb, return the sock
@@ -109,9 +108,10 @@ void srt_client_init(int conn)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_sock(unsigned int client_port)
+sock_t srt_client_sock(unsigned int client_port)
 {
     client_tcb_t *node = takeFromListHead(tcbFreeList);
+    if(!node) return NULL;
     node->state = CLOSED;
     node->client_portNum = client_port;
     inserIntoList(tcbUsedList, node);
@@ -132,8 +132,9 @@ int srt_client_sock(unsigned int client_port)
 //
 
 
-int srt_client_connect(int sockfd, unsigned int server_port) {
-  return 0;
+int srt_client_connect(sock_t sockfd, unsigned int server_port)
+{
+    return 0;
 }
 
 // Send data to a srt server
@@ -144,7 +145,7 @@ int srt_client_connect(int sockfd, unsigned int server_port) {
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_send(int sockfd, void* data, unsigned int length) {
+int srt_client_send(sock_t sockfd, void* data, unsigned int length) {
 	return 1;
 }
 
@@ -158,7 +159,7 @@ int srt_client_send(int sockfd, void* data, unsigned int length) {
 // if after a number of retries FIN_MAX_RETRY the state is still FINWAIT then
 // the state transitions to CLOSED and -1 is returned.
 
-int srt_client_disconnect(int sockfd) {
+int srt_client_disconnect(sock_t sockfd) {
   return 0;
 }
 
@@ -172,7 +173,7 @@ int srt_client_disconnect(int sockfd) {
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_close(int sockfd) {
+int srt_client_close(sock_t sockfd) {
 	return 0;
 }
 

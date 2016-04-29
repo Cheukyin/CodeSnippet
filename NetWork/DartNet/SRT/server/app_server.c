@@ -22,6 +22,9 @@ int overlay_start() {
 	tcpserv_sd = socket(AF_INET, SOCK_STREAM, 0); 
 	if(tcpserv_sd<0) 
 		return -1;
+    int rep = 1;
+    setsockopt( tcpserv_sd, SOL_SOCKET, SO_REUSEADDR, &rep, sizeof(rep) );
+
 	memset(&tcpserv_addr, 0, sizeof(tcpserv_addr));
 	tcpserv_addr.sin_family = AF_INET;
 	tcpserv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
