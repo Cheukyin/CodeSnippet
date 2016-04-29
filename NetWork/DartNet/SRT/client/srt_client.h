@@ -44,6 +44,7 @@ typedef struct client_tcb {
 	segBuf_t* sendBufTail;          //tail of send buffer
 	unsigned int unAck_segNum;      //number of sent-but-not-Acked segments
 
+    struct client_tcb *prev;
     struct client_tcb *next;
 } client_tcb_t;
 

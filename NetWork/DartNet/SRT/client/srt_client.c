@@ -30,53 +30,46 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-static client_tcb_t *tcbUsedList = NULL;
-static client_tcb_t *tcbFreeList = NULL;
+static client_tcb_t *tcbUsedList;
+static client_tcb_t *tcbFreeList;
 
-static void allocTCB()
+static inline void inserIntoList(client_tcb_t *lh, client_tcb_t *newNode)
 {
-    if(!tcbFreeList)
+    assert(lh); assert(newNode);
+
+    client_tcb_t *tcbNode = lh->next;
+
+    lh->next = newNode;
+    newNode->next = tcbNode;
+    newNode->prev = lh;
+    if(tcbNode) tcbNode->prev = newNode;
+}
+
+static inline void allocTCB()
+{
+    for(int i=0; i < 10; i++)
     {
-        tcbFreeList = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
-        tcbFreeList->next = NULL;
-    }
-    for(int i=0; i < 9; i++)
-    {
-        client_tcb_t *tcbNode = tcbFreeList->next;
-        tcbFreeList->next = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
-        tcbFreeList->next->next = tcbNode;
+        client_tcb_t *newNode = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
+        if(!newNode) return;
+        inserIntoList(tcbFreeList, newNode);
     }
 }
 
-static void inserIntoList(client_tcb_t **lh, client_tcb_t *node)
-{
-    if(!*lh)
-    {
-        *lh = node;
-        node->next = NULL;
-        return;
-    }
-    client_tcb_t *n = (*lh)->next;
-    (*lh)->next = node;
-    node->next = n;
-}
-
-static client_tcb_t* removeFromUsedList(client_tcb_t *node)
+static inline client_tcb_t* removeFromList(client_tcb_t *node)
 {
     assert(node);
-    if(tcbUsedList == node)
-    {
-        tcbUsedList = tcbUsedList->next;
-        return node;
-    }
+
+    node->prev->next = node->next;
+    if(node->next)
+        node->next->prev = node->prev;
+    return node;
 }
 
-static client_tcb_t* takeFromFreeListHead(client_tcb_t *lh)
+static inline client_tcb_t* takeFromListHead(client_tcb_t *lh)
 {
-    if(!lh) allocTCB();
-    if(!tcbFreeList) return NULL;
-    tcbFreeList = tcbFreeList->next;
-    return lh;
+    if(!lh->next) allocTCB();
+    if(!lh->next) return NULL;
+    return removeFromList(lh->next);
 }
 
 
@@ -95,6 +88,11 @@ static int overlayConn;
 
 void srt_client_init(int conn)
 {
+    tcbUsedList = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
+    tcbUsedList->prev = tcbUsedList->next = NULL;
+    tcbFreeList = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
+    tcbFreeList->prev = tcbFreeList->next = NULL;
+
     overlayConn = conn;
     return;
 }
@@ -111,10 +109,13 @@ void srt_client_init(int conn)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_sock(unsigned int client_port) 
+int srt_client_sock(unsigned int client_port)
 {
-    tcbFreeList->next->state = CLOSED;
-    return 0;
+    client_tcb_t *node = takeFromListHead(tcbFreeList);
+    node->state = CLOSED;
+    node->client_portNum = client_port;
+    inserIntoList(tcbUsedList, node);
+    return node;
 }
 
 // Connect to a srt server
