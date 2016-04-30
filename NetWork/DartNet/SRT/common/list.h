@@ -38,7 +38,7 @@ static inline void removeFromList(node_t *node)
 
 static inline node_t* takeFromListHead(node_t *lh)
 {
-    if(!lh->next) allocTCB();
+    if(lh == tcbFreeList && !lh->next) allocTCB();
     if(!lh->next) return NULL;
 
     node_t *node = lh->next;
@@ -50,3 +50,13 @@ static inline tcb_t* sock2TCB(sock_t sock)
 {
     return sock;
 }
+
+
+
+
+
+
+
+
+
+

@@ -28,6 +28,23 @@
 //  GOAL: Your job is to design and implement the prototypes below - fill in the code.
 //
 
+static inline void destroyList(node_t *lh)
+{
+    while(!lh)
+    {
+        node_t *next = lh->next;
+        free(lh);
+        lh = next;
+    }
+}
+
+static inline void exitDestroyList()
+{
+    printf("Destroy List!\n");
+    destroyList(tcbUsedList);
+    destroyList(tcbFreeList);
+}
+
 // srt server initialization
 //
 // This function initializes the TCB table marking all entries NULL. It also initializes
@@ -47,6 +64,8 @@ void srt_server_init(int conn)
     tcbFreeList->prev = tcbFreeList->next = NULL;
 
     bzero(port2sock, MAX_PORT_NUM * sizeof(sock_t));
+
+    atexit(exitDestroyList);
 
     overlayConn = conn;
 

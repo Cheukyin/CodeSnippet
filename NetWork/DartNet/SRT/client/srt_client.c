@@ -31,6 +31,22 @@
 //
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+static inline void destroyList(node_t *lh)
+{
+    while(!lh)
+    {
+        node_t *next = lh->next;
+        free(lh);
+        lh = next;
+    }
+}
+
+static inline void exitDestroyList()
+{
+    printf("Destroy List!\n");
+    destroyList(tcbUsedList);
+    destroyList(tcbFreeList);
+}
 
 // srt client initialization
 //
@@ -53,6 +69,8 @@ void srt_client_init(int conn)
     tcbFreeList->prev = tcbFreeList->next = NULL;
 
     bzero(port2sock, MAX_PORT_NUM * sizeof(sock_t));
+
+    atexit(exitDestroyList);
 
     overlayConn = conn;
 
