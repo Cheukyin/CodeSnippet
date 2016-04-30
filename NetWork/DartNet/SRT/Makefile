@@ -11,7 +11,7 @@ common/seg.o: common/seg.c common/seg.h
 	gcc -m32 -std=c99 -g -c common/seg.c -o common/seg.o
 client/srt_client.o: client/srt_client.c client/srt_client.h 
 	gcc -m32 -std=c99 -pthread -g -c client/srt_client.c -o client/srt_client.o
-server/srt_server.o: server/srt_server.c server/srt_server.h
+server/srt_server.o: server/srt_server.c server/srt_server.h common/list.h
 	gcc -m32 -std=c99 -pthread -g -c server/srt_server.c -o server/srt_server.o
 clean:
 	rm -rf common/*.o

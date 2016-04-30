@@ -1,8 +1,10 @@
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <strings.h>
 #include <stdio.h>
 #include <time.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "srt_server.h"
 #include "../common/constants.h"
 
@@ -35,8 +37,30 @@
 // handles call connections for the client.
 //
 
-void srt_server_init(int conn) {
-  return;
+static int overlayConn;
+
+void srt_server_init(int conn)
+{
+    tcbUsedList = (tcb_t*)malloc( sizeof(tcb_t) );
+    tcbUsedList->prev = tcbUsedList->next = NULL;
+    tcbFreeList = (tcb_t*)malloc( sizeof(tcb_t) );
+    tcbFreeList->prev = tcbFreeList->next = NULL;
+
+    bzero(port2sock, MAX_PORT_NUM * sizeof(sock_t));
+
+    overlayConn = conn;
+
+    pthread_t pid;
+    if(pthread_create(&pid, NULL, seghandler, NULL) < 0)
+    {
+        printf("Thread creation failed!\n");
+        exit(1);
+    }
+    if(pthread_detach(pid) < 0)
+    {
+        printf("Thread detach failed!\n");
+        exit(1);
+    }
 }
 
 // Create a server sock
@@ -48,8 +72,20 @@ void srt_server_init(int conn) {
 // and be used to identify the connection on the server side. If no entry in the TCB table
 // is available the function returns -1.
 
-int srt_server_sock(unsigned int port) {
-	return 0;
+sock_t srt_server_sock(unsigned int port)
+{
+    tcb_t *node = takeFromListHead(tcbFreeList);
+    if(!node) return NULL;
+    assert(node->isFree);
+
+    node->state = CLOSED;
+    node->svr_portNum = port;
+    inserIntoList(tcbUsedList, node);
+    node->isFree = 0;
+
+    port2sock[port] = node;
+
+    return node;
 }
 
 // Accept connection from srt client
@@ -61,8 +97,13 @@ int srt_server_sock(unsigned int port) {
 // the busy wait loop. You can implement this blocking wait in different ways, if you wish.
 //
 
-int srt_server_accept(int sockfd) {
-	return 0;
+int srt_server_accept(sock_t sockfd)
+{
+    tcb_t *node = sock2TCB(sockfd);
+    node->state = LISTENING;
+    while(node->state != CONNECTED);
+    printf("Accepted!\n");
+	return 1;
 }
 
 // Receive data from a srt client
@@ -72,7 +113,8 @@ int srt_server_accept(int sockfd) {
 // such as SYN, SYNACK, etc.flow in both directions. You do not need to implement
 // this for Lab4. We will use this in Lab5 when we implement a Go-Back-N sliding window.
 //
-int srt_server_recv(int sockfd, void* buf, unsigned int length) {
+int srt_server_recv(sock_t sockfd, void* buf, unsigned int length)
+{
 	return 1;
 }
 
@@ -83,8 +125,31 @@ int srt_server_recv(int sockfd, void* buf, unsigned int length) {
 // if fails (i.e., in the wrong state).
 //
 
-int srt_server_close(int sockfd) {
-	return 0;
+static inline void freeNode(tcb_t *node)
+{
+    removeFromList(node);
+    inserIntoList(tcbFreeList, node);
+    node->isFree = 1;
+}
+
+int srt_server_close(sock_t sockfd)
+{
+    tcb_t *node = sock2TCB(sockfd);
+    if(!node || node->isFree) return -1;
+
+    printf("close!\n");
+
+    if(node->state == CLOSEWAIT)
+        sleep(CLOSEWAIT_TIME);
+
+    freeNode(node);
+
+    if(node->state == CLOSEWAIT || node->state == CLOSED)
+        return 1;
+
+    printf("socket closed in a wrong state: %d!\n", node->state);
+
+	return -1;
 }
 
 // Thread handles incoming segments
@@ -96,6 +161,83 @@ int srt_server_close(int sockfd) {
 // actions are taken. See the client FSM for more details.
 //
 
-void *seghandler(void* arg) {
-  return 0;
+void *seghandler(void* arg)
+{
+    seg_t seg;
+    while(recvseg(overlayConn, &seg) > 0)
+    {
+        int cliPort = seg.header.src_port;
+        int svrPort = seg.header.dest_port;
+        unsigned int segType = seg.header.type;
+
+        tcb_t *node = sock2TCB( port2sock[svrPort] );
+        if(!node || node->isFree) continue;
+
+        seg_t sendSeg;
+        sendSeg.header.src_port = node->svr_portNum;
+        sendSeg.header.dest_port = node->client_portNum;
+
+        switch(node->state)
+        {
+            case CLOSED:
+                printf("Wrong seg rcvd in CLOSED state!\n");
+                continue;
+
+            case LISTENING:
+                if(segType == SYN)
+                {
+                    sendSeg.header.type = SYNACK;
+                    sendseg(overlayConn, &sendSeg);
+
+                    node->state = CONNECTED;
+                    node->client_portNum = cliPort;
+                }
+                else
+                {
+                    printf("Wrong seg rcvd in LISTENING state!\n");
+                    continue;
+                }
+                break;
+
+            case CONNECTED:
+                if(segType == SYN)
+                {
+                    sendSeg.header.type = SYNACK;
+                    sendseg(overlayConn, &sendSeg);
+                    node->state = CONNECTED;
+                }
+                else if(segType == FIN)
+                {
+                    sendSeg.header.type = FINACK;
+                    sendseg(overlayConn, &sendSeg);
+                    node->state = CLOSEWAIT;
+                }
+                else
+                {
+                    printf("Wrong seg rcvd in CONNECTED state!\n");
+                    continue;
+                }
+                break;
+
+            case CLOSEWAIT:
+                if(segType == FIN)
+                {
+                    sendSeg.header.type = FINACK;
+                    sendseg(overlayConn, &sendSeg);
+                    node->state = CLOSEWAIT;
+                }
+                else
+                {
+                    printf("Wrong seg rcvd in CLOSEWAIT state!\n");
+                    continue;
+                }
+                break;
+
+            default:
+                printf("In an unknown state!\n");
+                continue;
+        }
+    }
+
+    return 0;
 }

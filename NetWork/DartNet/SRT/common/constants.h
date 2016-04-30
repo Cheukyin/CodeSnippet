@@ -1,6 +1,7 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
+#define MAX_PORT_NUM (1<<16)
 #define MAX_TRANSPORT_CONNECTIONS 10
 #define PORT 9008
 #define MAX_SEG_LEN  1500

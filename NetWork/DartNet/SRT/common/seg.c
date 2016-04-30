@@ -91,4 +91,3 @@ int seglost() {
 	else
 		return 0;
 }
-

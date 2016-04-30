@@ -1,10 +1,12 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <strings.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <time.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "srt_client.h"
 
 
@@ -30,49 +32,6 @@
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
-static client_tcb_t *tcbUsedList;
-static client_tcb_t *tcbFreeList;
-
-static inline void inserIntoList(client_tcb_t *lh, client_tcb_t *newNode)
-{
-    assert(lh); assert(newNode);
-
-    client_tcb_t *tcbNode = lh->next;
-
-    lh->next = newNode;
-    newNode->next = tcbNode;
-    newNode->prev = lh;
-    if(tcbNode) tcbNode->prev = newNode;
-}
-
-static inline void allocTCB()
-{
-    for(int i=0; i < 10; i++)
-    {
-        client_tcb_t *newNode = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
-        if(!newNode) return;
-        inserIntoList(tcbFreeList, newNode);
-    }
-}
-
-static inline client_tcb_t* removeFromList(client_tcb_t *node)
-{
-    assert(node);
-
-    node->prev->next = node->next;
-    if(node->next)
-        node->next->prev = node->prev;
-    return node;
-}
-
-static inline client_tcb_t* takeFromListHead(client_tcb_t *lh)
-{
-    if(!lh->next) allocTCB();
-    if(!lh->next) return NULL;
-    return removeFromList(lh->next);
-}
-
-
 // srt client initialization
 //
 // This function initializes the TCB table marking all entries NULL. It also initializes
@@ -88,12 +47,26 @@ static int overlayConn;
 
 void srt_client_init(int conn)
 {
-    tcbUsedList = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
+    tcbUsedList = (tcb_t*)malloc( sizeof(tcb_t) );
     tcbUsedList->prev = tcbUsedList->next = NULL;
-    tcbFreeList = (client_tcb_t*)malloc( sizeof(client_tcb_t) );
+    tcbFreeList = (tcb_t*)malloc( sizeof(tcb_t) );
     tcbFreeList->prev = tcbFreeList->next = NULL;
 
+    bzero(port2sock, MAX_PORT_NUM * sizeof(sock_t));
+
     overlayConn = conn;
+
+    pthread_t pid;
+    if(pthread_create(&pid, NULL, seghandler, NULL) < 0)
+    {
+        printf("Thread creation failed!\n");
+        exit(1);
+    }
+    if(pthread_detach(pid) < 0)
+    {
+        printf("Thread detach failed!\n");
+        exit(1);
+    }
 }
 
 // Create a client tcb, return the sock
@@ -110,12 +83,41 @@ void srt_client_init(int conn)
 
 sock_t srt_client_sock(unsigned int client_port)
 {
-    client_tcb_t *node = takeFromListHead(tcbFreeList);
+    tcb_t *node = takeFromListHead(tcbFreeList);
     if(!node) return NULL;
+    assert(node->isFree);
+
     node->state = CLOSED;
     node->client_portNum = client_port;
     inserIntoList(tcbUsedList, node);
+    node->isFree = 0;
+
+    port2sock[client_port] = node;
+
     return node;
+}
+
+int try_send(tcb_t *tcb, int tryMaxNum, seg_t *seg,
+             unsigned int midState, unsigned int destState, int interval)
+{
+    int tryNum = tryMaxNum;
+
+    while(--tryNum)
+    {
+        printf("try: %d\n", tryNum);
+        sendseg(overlayConn, seg);
+        tcb->state = midState;
+
+        if(usleep( interval/(unsigned int)1e3 ) < 0)
+            printf("usleep error!\n");
+
+        if(tcb->state == destState)
+            return 0;
+    }
+
+    tcb->state = CLOSED;
+    printf("ACK LOST!\n");
+    return -1;
 }
 
 // Connect to a srt server
@@ -134,7 +136,29 @@ sock_t srt_client_sock(unsigned int client_port)
 
 int srt_client_connect(sock_t sockfd, unsigned int server_port)
 {
-    return 0;
+    tcb_t *tcb = sock2TCB(sockfd);
+    if(!tcb || tcb->isFree)
+    {
+        printf("tcb is not in used!\n");
+        return -1;
+    }
+
+    if(tcb->state != CLOSED)
+    {
+        printf("socket closed in a connect state: %d!\n", tcb->state);
+        return -1;
+    }
+
+    printf("Connect!\n");
+
+    tcb->svr_portNum = server_port;
+
+    seg_t seg;
+    seg.header.type = SYN;
+    seg.header.src_port = tcb->client_portNum;
+    seg.header.dest_port = server_port;
+
+    return try_send(tcb, SYN_MAX_RETRY, &seg, SYNSENT, CONNECTED, SYNSEG_TIMEOUT_NS);
 }
 
 // Send data to a srt server
@@ -145,7 +169,8 @@ int srt_client_connect(sock_t sockfd, unsigned int server_port)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_send(sock_t sockfd, void* data, unsigned int length) {
+int srt_client_send(sock_t sockfd, void* data, unsigned int length)
+{
 	return 1;
 }
 
@@ -159,8 +184,24 @@ int srt_client_send(sock_t sockfd, void* data, unsigned int length) {
 // if after a number of retries FIN_MAX_RETRY the state is still FINWAIT then
 // the state transitions to CLOSED and -1 is returned.
 
-int srt_client_disconnect(sock_t sockfd) {
-  return 0;
+int srt_client_disconnect(sock_t sockfd)
+{
+    tcb_t *tcb = sock2TCB(sockfd);
+    if(!tcb || tcb->isFree) return -1;
+
+    if(tcb->state != CONNECTED)
+    {
+        printf("srt_client_disconnect invoked in a connect state: %d!\n", tcb->state);
+        return -1;
+    }
+
+    printf("Disconnect!\n");
+    seg_t seg;
+    seg.header.type = FIN;
+    seg.header.src_port = tcb->client_portNum;
+    seg.header.dest_port = tcb->svr_portNum;
+
+    return try_send(tcb, FIN_MAX_RETRY, &seg, FINWAIT, CLOSED, FINSEG_TIMEOUT_NS);
 }
 
 
@@ -173,8 +214,22 @@ int srt_client_disconnect(sock_t sockfd) {
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_close(sock_t sockfd) {
-	return 0;
+int srt_client_close(sock_t sockfd)
+{
+    tcb_t *node = sock2TCB(sockfd);
+
+    if(!node || node->isFree) return -1;
+    removeFromList(node);
+    inserIntoList(tcbFreeList, node);
+    node->isFree = 1;
+
+    if(node->state != CLOSED)
+    {
+        printf("socket closed in a connect state: %d!\n", node->state);
+        return -1;
+    }
+
+	return 1;
 }
 
 // The thread handles incoming segments
@@ -186,9 +241,51 @@ int srt_client_close(sock_t sockfd) {
 // actions are taken. See the client FSM for more details.
 //
 
-void *seghandler(void* arg) {
-  return 0;
+void *seghandler(void* arg)
+{
+    seg_t seg;
+
+    while(recvseg(overlayConn, &seg) > 0)
+    {
+        int destPort = seg.header.dest_port;
+        unsigned int segType = seg.header.type;
+        tcb_t *node = sock2TCB( port2sock[destPort] );
+        if(!node || node->isFree) continue;
+
+        switch(node->state)
+        {
+            case CLOSED:
+                printf("Wrong seg rcvd in CLOSED state!\n");
+                continue;
+
+            case SYNSENT:
+                if(segType == SYNACK)
+                    node->state = CONNECTED;
+                else
+                {
+                    printf("Wrong seg rcvd in SYNSENT state!\n");
+                    continue;
+                }
+                break;
+
+            case CONNECTED:
+                break;
+
+            case FINWAIT:
+                if(segType == FINACK)
+                    node->state = CLOSED;
+                else
+                {
+                    printf("Wrong seg rcvd in FINWAIT state!\n");
+                    continue;
+                }
+                break;
+
+            default:
+                printf("In an unknown state!\n");
+                continue;
+        }
+    }
+
+    return 0;
 }
-
-
-

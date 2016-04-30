@@ -30,7 +30,7 @@ typedef struct segBuf {
 } segBuf_t;
 
 
-//client transport control block. the client side of a SRT connection uses this data structure to keep track of the connection information.   
+//client transport control block. the client side of a SRT connection uses this data structure to keep track of the connection information.
 typedef struct client_tcb {
 	unsigned int svr_nodeID;        //node ID of server, similar as IP address, currently unused
 	unsigned int svr_portNum;       //port number of server
@@ -46,9 +46,18 @@ typedef struct client_tcb {
 
     struct client_tcb *prev;
     struct client_tcb *next;
+    int isFree;
 } client_tcb_t;
 
+
 typedef client_tcb_t *sock_t;
+
+
+typedef client_tcb_t node_t;
+typedef client_tcb_t tcb_t;
+#include "../common/list.h"
+
+static sock_t port2sock[MAX_PORT_NUM];
 
 
 //
