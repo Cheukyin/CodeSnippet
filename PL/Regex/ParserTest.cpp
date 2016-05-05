@@ -143,4 +143,11 @@ TEST_CASE(ParserTest)
     printer->tree = "";
     rePtr->accept(printer);
     EXPECT_EQ(printer->tree, re6_res);
+
+    string re7 = "a(ab|b)";
+    rePtr = parse(re7);
+    printer->tree = "";
+    rePtr->accept(printer);
+    EXPECT_EQ(printer->tree, "(Seq (Char a) "
+                             "(Group (Alt (Seq (Char a) (Char b)) (Char b))))");
 }
