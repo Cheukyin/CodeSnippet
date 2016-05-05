@@ -17,9 +17,9 @@ namespace RE
     public:
         CachedObject()
         {
-            if(!hasRegDelPool)
+            if(!hasRegDelPool_)
             {
-                hasRegDelPool = true;
+                hasRegDelPool_ = true;
                 atexit( deletePool );
             }
         }
@@ -46,7 +46,7 @@ namespace RE
         }
 
     private:
-        static bool hasRegDelPool;
+        static bool hasRegDelPool_;
         static vector<T*> pool_;
         static int chunkSize_;
         static queue<T*> freeQueue_;
@@ -64,7 +64,7 @@ namespace RE
     }; // class CachedObject
 
     template<class T>
-    bool CachedObject<T>::hasRegDelPool = false;
+    bool CachedObject<T>::hasRegDelPool_ = false;
 
     template<class T>
     vector<T*> CachedObject<T>::pool_;

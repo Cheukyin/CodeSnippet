@@ -2,68 +2,73 @@
 #define REGEX_NFA_H
 
 #include "Visitor.hpp"
+#include "CachedObject.hpp"
 #include <memory>
 #include <vector>
+#include <map>
 
 namespace RE
 {
-    struct Node;
-    struct Edge;
-    using NodePtr = Node*;
     using std::vector;
+    using std::map;
 
-    struct Node
+    struct NFA;
+    using NFAPtr = std::shared_ptr<NFA>;
+
+    struct Node: public CachedObject<Node>
     {
-        vector<Edge> edges; // 0 for epsilon
+        map< char, vector<Node*> > edges; // 0 for epsilon
         int group; // -1 for anonymous group
 
         Node() : group(-1) {}
         Node(int g) : group(g) {}
-    };
 
-    struct Edge
-    {
-        char c;
-        NodePtr node;
-
-        Edge(char ch, NodePtr n) : c(ch), node(n) {}
+        void addEdge(char c, Node* n)
+        {
+            auto iter = edges.find(c);
+            if(iter != edges.end())
+                iter->second.push_back(n);
+            else edges[c] = vector<Node*>(1, n);
+        }
     };
 
     struct NFA
     {
-        NodePtr start;
-        NodePtr end;
+        Node* start;
+        Node* end;
 
-        vector<NodePtr> nodes;
+        vector<Node*> nodes;
 
         ~NFA()
         {
-            NodePool* pool = NodePool::getPool();
-            for(NodePtr node : nodes)
-                pool->releaseObject(node);
+            for(Node* node : nodes)
+                delete node;
         }
     };
 
-    class NFAConstructor : public Visitor, public std::enable_shared_from_this<NFAConstructor>
+    class NFAConstructor
+        : public Visitor,
+          public std::enable_shared_from_this<NFAConstructor>
     {
     private:
-        NFA nfa;
+        NFAPtr nfa;
 
     public:
-        NFA construct(const RegexPtr& re)
+        NFAPtr construct(const RegexPtr& re)
         {
-            nfa = new NFA;
-            visit(GroupPtr(re, 0));
+            nfa = NFAPtr(new NFA);
+            visit( GroupPtr(re, 0) );
             return nfa;
         }
 
-        static NFA buildSimpleNFA(char ch)
+        void buildSimpleNFA(char ch)
         {
-            NodePtr start(new Node());
-            NodePtr end(new Node());
-            start->edges.push_back( Edge(ch, end) );
+            nfa->start = new Node;
+            nfa->end = new Node;
+            nfa->start->addEdge(ch, nfa->end);
 
-            return NFA(start, end);
+            nfa->nodes.push_back(nfa->start);
+            nfa->nodes.push_back(nfa->end);
         }
 
         void visit(const RegexPtr& re) override
@@ -73,56 +78,70 @@ namespace RE
         { return; }
 
         void visit(const NullPtr& re) override
-        { nfa = buildSimpleNFA(0); }
+        {
+            nfa->start = new Node;
+            nfa->end = nfa->start;
+            nfa->nodes.push_back(nfa->start);
+        }
 
         void visit(const CharPtr& re) override
-        { nfa = buildSimpleNFA(re->ch); }
+        { buildSimpleNFA(re->ch); }
 
         void visit(const AltPtr& re) override
         {
             re->left->accept( shared_from_this() );
-            NFA lnfa = nfa;
+            Node* lstart = nfa->start;
+            Node* lend = nfa->end;
             re->right->accept( shared_from_this() );
-            NFA rnfa = nfa;
+            Node* rstart = nfa->start;
+            Node* rend = nfa->end;
 
-            nfa = NFA(NodePtr(new Node()), NodePtr(new Node()));
+            nfa->start = new Node;
+            nfa->end = new Node;
+            nfa->nodes.push_back(nfa->start);
+            nfa->nodes.push_back(nfa->end);
 
-            nfa.start->edges.push_back( Edge(0, lnfa.start) );
-            nfa.start->edges.push_back( Edge(0, rnfa.start) );
+            nfa->start->addEdge(0, lstart);
+            nfa->start->addEdge(0, rstart);
 
-            lnfa.end->edges.push_back( Edge(0, nfa.end) );
-            rnfa.end->edges.push_back( Edge(0, nfa.end) );
+            lend->addEdge(0, nfa->end);
+            rend->addEdge(0, nfa->end);
         }
 
         void visit(const SeqPtr& re) override
         {
             re->first->accept( shared_from_this() );
-            NFA fnfa = nfa;
+            Node* lstart = nfa->start;
+            Node* lend = nfa->end;
             re->last->accept( shared_from_this() );
-            fnfa.end->edges.push_back( Edge(0, nfa.start) );
+            Node* rstart = nfa->start;
+            Node* rend = nfa->end;
 
-            nfa = NFA(fnfa.start, nfa.end);
+            lend->addEdge(0, rstart);
+
+            nfa->start = lstart;
+            nfa->end = rend;
         }
 
         void visit(const RepPtr& re) override
         {
             re->re->accept( shared_from_this() );
-            NFA rnfa = nfa;
+            Node* rstart = nfa->start;
+            Node* rend = nfa->end;
 
-            nfa = NFA(NodePtr(new Node()), NodePtr(new Node()));
+            nfa->start = new Node;
+            nfa->end = nfa->start;
+            nfa->nodes.push_back(nfa->start);
 
-            nfa.start->edges.push_back( Edge(0, rnfa.start) );
-            nfa.start->edges.push_back( Edge(0, nfa.end) );
-
-            rnfa.end->edges.push_back( Edge(0, rnfa.start) );
-            rnfa.end->edges.push_back( Edge(0, nfa.end) );
+            nfa->start->addEdge(0, rstart);
+            rend->addEdge(0, nfa->end);
         }
 
         void visit(const GroupPtr& re) override
         {
             re->re->accept( shared_from_this() );
-            nfa.start->group = re->group * 2;
-            nfa.start->group = re->group * 2 + 1;
+            nfa->start->group = re->group * 2;
+            nfa->end->group = re->group * 2 + 1;
         }
 
     }; // struct NFAConstructor
