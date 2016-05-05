@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "srt_client.h"
 
 // create a tcp connection to the server
@@ -14,7 +15,7 @@ int overlay_start() {
 	int out_conn;
 	struct sockaddr_in servaddr;
 	struct hostent *hostInfo;
-	
+
 	char hostname_buf[50];
 	printf("Enter server name to connect:");
 	scanf("%s",hostname_buf);
@@ -24,17 +25,17 @@ int overlay_start() {
 		printf("host name error!\n");
 		return -1;
 	}
-		
-	servaddr.sin_family =hostInfo->h_addrtype;	
+
+	servaddr.sin_family =hostInfo->h_addrtype;
 	memcpy((char *) &servaddr.sin_addr.s_addr, hostInfo->h_addr_list[0], hostInfo->h_length);
 	servaddr.sin_port = htons(PORT);
 
-	out_conn = socket(AF_INET,SOCK_STREAM,0);  
+	out_conn = socket(AF_INET,SOCK_STREAM,0);
 	if(out_conn<0) {
 		return -1;
 	}
 	if(connect(out_conn, (struct sockaddr*)&servaddr, sizeof(servaddr))<0)
-		return -1; 
+		return -1;
 	return out_conn;
 }
 
@@ -46,19 +47,19 @@ void overlay_stop(int overlay_conn) {
 int main() {
 	//random seed for loss rate
 	srand(time(NULL));
-	//start overlay	
+	//start overlay
 	int overlay_conn = overlay_start();
 	if(overlay_conn<0) {
 		printf("fail to start overlay\n");
 		exit(1);
 	}
 
-	//initialize srt client	
+	//initialize srt client
 	srt_client_init(overlay_conn);
 
 	//create a srt client sock on port 87 and connect to srt server at port 88
-	int sockfd = srt_client_sock(87);
-	if(sockfd<0) {
+	sock_t sockfd = srt_client_sock(87);
+	if(!sockfd) {
 		printf("fail to create srt client sock");
 		exit(1);
 	}
@@ -67,10 +68,10 @@ int main() {
 		exit(1);
 	}
 	printf("client connect to server, client port:87, server port 88\n");
-	
+
 	//create a srt client sock on port 89 and connect to srt server at port 90
-	int sockfd2 = srt_client_sock(89);
-	if(sockfd2<0) {
+	sock_t sockfd2 = srt_client_sock(89);
+	if(!sockfd2) {
 		printf("fail to create srt client sock");
 		exit(1);
 	}

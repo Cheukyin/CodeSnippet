@@ -30,7 +30,7 @@ typedef struct segBuf {
 } segBuf_t;
 
 
-//client transport control block. the client side of a SRT connection uses this data structure to keep track of the connection information.   
+//client transport control block. the client side of a SRT connection uses this data structure to keep track of the connection information.
 typedef struct client_tcb {
 	unsigned int svr_nodeID;        //node ID of server, similar as IP address, currently unused
 	unsigned int svr_portNum;       //port number of server
@@ -46,7 +46,18 @@ typedef struct client_tcb {
 
     struct client_tcb *prev;
     struct client_tcb *next;
+    int isFree;
 } client_tcb_t;
+
+
+typedef client_tcb_t *sock_t;
+
+
+typedef client_tcb_t node_t;
+typedef client_tcb_t tcb_t;
+#include "../common/list.h"
+
+static sock_t port2sock[MAX_PORT_NUM];
 
 
 //
@@ -77,7 +88,7 @@ void srt_client_init(int conn);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_sock(unsigned int client_port);
+sock_t srt_client_sock(unsigned int client_port);
 
 // This function looks up the client TCB table to find the first NULL entry, and creates
 // a new TCB entry using malloc() for that entry. All fields in the TCB are initialized 
@@ -89,7 +100,7 @@ int srt_client_sock(unsigned int client_port);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_connect(int socked, unsigned int server_port);
+int srt_client_connect(sock_t socked, unsigned int server_port);
 
 // This function is used to connect to the server. It takes the socket ID and the 
 // server's port number as input parameters. The socket ID is used to find the TCB entry.  
@@ -102,7 +113,7 @@ int srt_client_connect(int socked, unsigned int server_port);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_send(int sockfd, void* data, unsigned int length);
+int srt_client_send(sock_t sockfd, void* data, unsigned int length);
 
 // Send data to a srt server. This function should use the SRT socket ID to find the TCP entry. 
 // It creates segBufs using the given data and append them to send linked list. 
@@ -119,7 +130,7 @@ int srt_client_send(int sockfd, void* data, unsigned int length);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_disconnect(int sockfd);
+int srt_client_disconnect(sock_t sockfd);
 
 // This function is used to disconnect from the server. It takes the socket ID as 
 // an input parameter. The socket ID is used to find the TCB entry in the TCB table.  
@@ -133,7 +144,7 @@ int srt_client_disconnect(int sockfd);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_client_close(int sockfd);
+int srt_client_close(sock_t sockfd);
 
 // This function calls free() to free the TCB entry. It marks that entry in TCB as NULL
 // and returns 1 if succeeded (i.e., was in the right state to complete a close) and -1 

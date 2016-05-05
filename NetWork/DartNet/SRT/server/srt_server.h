@@ -35,7 +35,21 @@ typedef struct svr_tcb {
 	char* recvBuf;                  //a pointer pointing to the receive buffer
 	unsigned int  usedBufLen;       //size of the received data in receive buffer
 	pthread_mutex_t* bufMutex;      //a pointer pointing to the mutex which is used for receive buffer access
+
+    struct svr_tcb *prev;
+    struct svr_tcb *next;
+    int isFree;
 } svr_tcb_t;
+
+
+typedef svr_tcb_t *sock_t;
+
+
+typedef svr_tcb_t node_t;
+typedef svr_tcb_t tcb_t;
+#include "../common/list.h"
+
+static sock_t port2sock[MAX_PORT_NUM];
 
 
 //
@@ -66,7 +80,7 @@ void srt_server_init(int conn);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_server_sock(unsigned int port);
+sock_t srt_server_sock(unsigned int port);
 
 // This function looks up the client TCB table to find the first NULL entry, and creates
 // a new TCB entry using malloc() for that entry. All fields in the TCB are initialized 
@@ -79,7 +93,7 @@ int srt_server_sock(unsigned int port);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_server_accept(int sockfd);
+int srt_server_accept(sock_t sockfd);
 
 // This function gets the TCB pointer using the sockfd and changes the state of the connection to 
 // LISTENING. It then starts a timer to ``busy wait'' until the TCB's state changes to CONNECTED 
@@ -90,7 +104,7 @@ int srt_server_accept(int sockfd);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_server_recv(int sockfd, void* buf, unsigned int length);
+int srt_server_recv(sock_t sockfd, void* buf, unsigned int length);
 
 // Receive data from a srt client. Recall this is a unidirectional transport
 // where DATA flows from the client to the server. Signaling/control messages
@@ -105,7 +119,7 @@ int srt_server_recv(int sockfd, void* buf, unsigned int length);
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 //
 
-int srt_server_close(int sockfd);
+int srt_server_close(sock_t sockfd);
 
 // This function calls free() to free the TCB entry. It marks that entry in TCB as NULL
 // and returns 1 if succeeded (i.e., was in the right state to complete a close) and -1 
