@@ -4,8 +4,6 @@
 
 using namespace RE;
 
-// only works in Release!!!!!!!!!!!!!!!!!
-
 TEST_CASE(ParserTest)
 {
     Parser parse;

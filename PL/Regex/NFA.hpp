@@ -5,7 +5,10 @@
 #include "CachedObject.hpp"
 #include <memory>
 #include <vector>
+#include <queue>
+#include <unordered_set>
 #include <map>
+#include <string>
 
 namespace RE
 {
@@ -14,6 +17,9 @@ namespace RE
 
     struct NFA;
     using NFAPtr = std::shared_ptr<NFA>;
+
+    class NFAConstructor;
+    using NFAConstructorPtr = std::shared_ptr<NFAConstructor>;
 
     struct Node: public CachedObject<Node>
     {
@@ -44,6 +50,45 @@ namespace RE
             for(Node* node : nodes)
                 delete node;
         }
+
+        // just for unittest
+        std::string bfs()
+        {
+            if(nodes.size() == 0) return "";
+
+            using std::queue;
+
+            std::string res;
+
+            queue<Node*> Q;
+            Q.push(start);
+
+            std::unordered_set<Node*> isVisited;
+            isVisited.insert(start);
+
+            while( !Q.empty() )
+            {
+                Node* n = Q.front();
+                Q.pop();
+
+                for(auto& edges : n->edges)
+                {
+                    for(Node* eachNode : edges.second)
+                    {
+                        if(isVisited.find(eachNode) != isVisited.end())
+                            continue;
+                        if(edges.first == 0)
+                            res.push_back('0');
+                        else
+                            res.push_back(edges.first);
+                        Q.push(eachNode);
+                        isVisited.insert(eachNode);
+                    }
+                }
+            }
+
+            return res;
+        }
     };
 
     class NFAConstructor
@@ -56,8 +101,8 @@ namespace RE
     public:
         NFAPtr construct(const RegexPtr& re)
         {
-            nfa = NFAPtr(new NFA);
-            visit( GroupPtr(re, 0) );
+            nfa.reset(new NFA);
+            visit( GroupPtr(new Group(re, 0)) );
             return nfa;
         }
 
