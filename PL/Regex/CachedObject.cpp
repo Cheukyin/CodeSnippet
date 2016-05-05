@@ -1,5 +1,5 @@
 #include "UnitTest.hpp"
-#include "ObjectPool.hpp"
+#include "CachedObject.hpp"
 
 using namespace RE;
 
