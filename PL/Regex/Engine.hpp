@@ -9,11 +9,14 @@ namespace RE
     class Engine
     {
     public:
-        Engine(const string& str): deri(new (Derivative)), containNull(new NullCheck)
-        { rePtr = parse(str); }
+        Engine(const string& str)
+            : rePtr( parse(str) ),
+              deri(new Derivative),
+              containNull(new NullCheck)
+        {}
 
         string search(const string& str)
-        { 
+        {
             for (StrSizeType i = 0; i < str.size(); i++)
             {
                 StrSizeType tail = searchHelper(rePtr, str, i);
