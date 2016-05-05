@@ -1,22 +1,30 @@
 #ifndef REGEX_OBJECTPOOL_H
 #define REGEX_OBJECTPOOL_H
 
-#include "NFA.hpp"
 #include <queue>
 #include <vector>
+#include <unistd.h>
+#include <stdlib.h>
 
 namespace RE
 {
     using std::queue;
+    using std::vector;
 
     template<class T>
-    class ObjectPool
+    class CachedObject
     {
     public:
-        ObjectPool(): chunkSize_(20)
-        {}
+        CachedObject()
+        {
+            if(!hasRegDelPool)
+            {
+                hasRegDelPool = true;
+                atexit( deletePool );
+            }
+        }
 
-        T* getObject()
+        void* operator new(size_t sz)
         {
             if( freeQueue_.empty() )
                 allocChunk();
@@ -25,38 +33,47 @@ namespace RE
             return obj;
         }
 
-        void releaseObject(T* obj)
-        { freeQueue_.push(obj); }
-
-        ~ObjectPool()
+        void operator delete(void* p, size_t sz)
         {
-            for(T* obj : pool_)
-                delete [] obj;
+            if(!p) return;
+            freeQueue_.push( static_cast<T*>(p) );
         }
 
-        static ObjectPool<T>* getPool()
+        static void deletePool()
         {
-            static ObjectPool<T>* pool = new ObjectPool<T>();
-            return pool;
+            for(T* obj : pool_)
+                ::operator delete(obj);
         }
 
     private:
-        vector<T*> pool_;
-        int chunkSize_;
-        queue<T*> freeQueue_;
+        static bool hasRegDelPool;
+        static vector<T*> pool_;
+        static int chunkSize_;
+        static queue<T*> freeQueue_;
 
-        void allocChunk(int num)
+        static void allocChunk()
         {
-            NodePtr *p = new NodePtr[chunkSize_];
-            pool_.push_back(p);
-
             for(int i=0; i < chunkSize_; i++)
-                freeQueue_.push(p++);
+            {
+                T *p = static_cast<T*>( ::operator new( sizeof(T) ) );
+                pool_.push_back(p);
+                freeQueue_.push(p);
+            }
         }
 
-    }; // class ObjectPool
+    }; // class CachedObject
 
-    using NodePool = ObjectPool<Node>;
+    template<class T>
+    bool CachedObject<T>::hasRegDelPool = false;
+
+    template<class T>
+    vector<T*> CachedObject<T>::pool_;
+
+    template<class T>
+    int CachedObject<T>::chunkSize_ = 20;
+
+    template<class T>
+    queue<T*> CachedObject<T>::freeQueue_;
 
 } // namespace RE
 
