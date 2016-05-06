@@ -1,7 +1,6 @@
 #include "UnitTest.hpp"
 #include "Derivative.hpp"
 #include "ASTDump.hpp"
-#include "Engine.hpp"
 using namespace RE;
 
 TEST_CASE(NullCheckTest)

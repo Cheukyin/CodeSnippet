@@ -1,15 +1,15 @@
-#ifndef REGEX_ENGINE_H
-#define REGEX_ENGINE_H
+#ifndef REGEX_DERIVATIVEENGINE_H
+#define REGEX_DERIVATIVEENGINE_H
 
 #include "Parser.hpp"
 #include "Derivative.hpp"
 
 namespace RE
 {
-    class Engine
+    class DerivativeEngine
     {
     public:
-        Engine(const string& str)
+        DerivativeEngine(const string& str)
             : rePtr( parse(str) ),
               deri(new Derivative),
               containNull(new NullCheck)
@@ -50,8 +50,8 @@ namespace RE
             return matchHelper(deri->drv(L, str[id]), str, id + 1);
         }
 
-    }; // class Engine
+    }; // class DerivativeEngine
 
 } // namespace RE
 
-#endif // REGEX_ENGINE_H
+#endif // REGEX_DERIVATIVEENGINE_H
