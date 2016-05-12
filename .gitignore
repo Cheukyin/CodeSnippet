@@ -6,3 +6,4 @@ GSYMS
 GPATH
 venv
 .\#*
+*.pyc
