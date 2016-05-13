@@ -14,7 +14,10 @@ namespace RE
     using VisitorPtr = std::shared_ptr<Visitor>;
 
     struct Regex
-    { virtual void accept(const VisitorPtr& visitor) = 0; };
+    {
+        int maxGroup;
+        virtual void accept(const VisitorPtr& visitor) = 0;
+    };
 
     using RegexPtr = std::shared_ptr<Regex>;
 

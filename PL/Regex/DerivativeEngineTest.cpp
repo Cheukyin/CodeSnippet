@@ -3,8 +3,12 @@
 
 using namespace RE;
 
-TEST_CASE(EngineTest)
+TEST_CASE(DerivativeEngineTest)
 {
+    DerivativeEngine nullEng("");
+    EXPECT_TRUE(nullEng.match(""));
+    EXPECT_FALSE(nullEng.match("abcabcabcabcc"));
+
     DerivativeEngine eng0("(?:abc)**");
     EXPECT_EQ(eng0.search("8980abababcabcabcabab"), "abcabcabc");
     EXPECT_TRUE(eng0.match(""));

@@ -8,10 +8,18 @@ namespace RE
 {
     RegexPtr Parser::operator()(const string& str)
     {
-        if (!str.size()) return RegexPtr( NullPtr(new Null) );
+        if (!str.size())
+        {
+            RegexPtr re( NullPtr(new Null) );
+            re->maxGroup = 1;
+            return re;
+        }
+
         iter = str.begin();
         group = 0;
-        return regex();
+        RegexPtr re = regex();
+        re->maxGroup = group+1;
+        return re;
     }
 
     RegexPtr Parser::regex()

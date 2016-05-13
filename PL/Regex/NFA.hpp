@@ -43,6 +43,8 @@ namespace RE
         Node* start;
         Node* end;
 
+        int maxGroup;
+
         vector<Node*> nodes;
 
         ~NFA()
@@ -77,10 +79,12 @@ namespace RE
                     {
                         if(isVisited.find(eachNode) != isVisited.end())
                             continue;
+
                         if(edges.first == 0)
                             res.push_back('0');
                         else
                             res.push_back(edges.first);
+
                         Q.push(eachNode);
                         isVisited.insert(eachNode);
                     }
@@ -103,6 +107,7 @@ namespace RE
         {
             nfa.reset(new NFA);
             visit( GroupPtr(new Group(re, 0)) );
+            nfa->maxGroup = re->maxGroup;
             return nfa;
         }
 
