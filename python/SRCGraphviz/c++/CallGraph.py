@@ -9,10 +9,11 @@ def addr2sym(addr, exe):
     cmd = "addr2line " + addr + " -e " + exe + "  -f | c++filt"
     return os.popen(cmd).read().split()
 
-def src_lineno_process(pos):
+def src_lineno_process(pos, isCallSite):
     src, lineno = pos.split(':')
     src = src.split( os.getcwd()+'/' )[-1]
-    lineno = str( int(lineno)-1 )
+    if(isCallSite):
+        lineno = str( int(lineno)-1 )
     return [src, lineno]
 
 def parseTrace(tracefile, exe):
@@ -24,10 +25,10 @@ def parseTrace(tracefile, exe):
             fnAddr, callSiteAddr = record.split()
 
             fn, fn_pos = addr2sym(fnAddr, exe)
-            fn_pos = src_lineno_process(fn_pos)
+            fn_pos = src_lineno_process(fn_pos, False)
 
             callsite, callsite_pos = addr2sym(callSiteAddr, exe)
-            callsite_pos = src_lineno_process(callsite_pos)
+            callsite_pos = src_lineno_process(callsite_pos, True)
 
             callStack.append([callsite, callsite_pos, fn, fn_pos])
     return callStack
