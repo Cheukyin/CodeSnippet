@@ -10,9 +10,9 @@ uint64 findKthPrime(uint64 k) // k >= 6
 {
     uint64 range = k*log(k) + k*log(log(k));
     char *notPrime = (char*)calloc(range+1, sizeof(char));
-    uint64 primeCnt = 1, prime = 2;
 
-    while(primeCnt++ < k)
+    uint64 prime = 2;
+    for(uint64 primeCnt=1; primeCnt < k; primeCnt++)
     {
         for(uint64 i = prime*prime; i <= range; i += prime)
             notPrime[i] = true;
