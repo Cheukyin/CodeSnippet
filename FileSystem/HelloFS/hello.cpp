@@ -28,6 +28,8 @@ const EntryType DIR_T = S_IFDIR;
 const EntryType FILE_T = S_IFREG;
 
 struct Entry;
+struct Directory;
+
 static list<Entry*> allEntries;
 
 struct Entry
@@ -55,6 +57,8 @@ struct Entry
     EntryType type;
     mode_t permission;
     nlink_t nlink;
+
+    Directory* parent;
 };
 
 struct File: public Entry
@@ -119,6 +123,7 @@ static Directory root("/", 0777);
 
 void* hello_init(struct fuse_conn_info *conn)
 {
+    root.parent = NULL;
     return NULL;
 }
 
@@ -296,6 +301,7 @@ static int insert_entry(Entry* ent)
         return -EINVAL;
 
     static_cast<Directory*>(*it)->dirent.push_back(ent);
+    ent->parent = static_cast<Directory*>(*it);
     allEntries.push_back(ent);
 
     return 0;
@@ -345,12 +351,62 @@ static int hello_mkdir(const char *path, mode_t mode)
     return insert_entry(d);
 }
 
+static int rmhelper(const char *path)
+{
+    auto it = std::find_if(allEntries.begin(), allEntries.end(),
+        [path](Entry* ent)->bool{
+            return ent->name == path;
+        });
+
+    if(it == allEntries.end()) return -ENOENT;
+
+    Entry* ent = *it;
+
+    Directory* parent = ent->parent;
+    if(!parent) return 0;
+
+    it = std::find(parent->dirent.begin(), parent->dirent.end(), ent);
+    if(it != parent->dirent.end())
+        parent->dirent.erase(it);
+
+    delete ent;
+
+    return 0;
+}
+
+static int hello_rmdir(const char *path)
+{
+    return rmhelper(path);
+}
+
+static int hello_unlink(const char *path)
+{
+    return rmhelper(path);
+}
+
+static int hello_rename(const char *from, const char *to, unsigned int flags)
+{
+    (void)flags;
+}
+
 static int hello_release(const char *path, struct fuse_file_info *fi)
 {
     /* Just a stub.	 This method is optional and can safely be left
     unimplemented */
 
     (void) path;
+    (void) fi;
+    return 0;
+}
+
+static int hello_fsync(const char *path, int isdatasync,
+                       struct fuse_file_info *fi)
+{
+    /* Just a stub.	 This method is optional and can safely be left
+       unimplemented */
+
+    (void) path;
+    (void) isdatasync;
     (void) fi;
     return 0;
 }
@@ -367,7 +423,10 @@ static struct fuse_operations hello_oper = {
     .open     = hello_open,
     .release  = hello_release,
     .read     = hello_read,
-    .mkdir    = hello_mkdir
+    .mkdir    = hello_mkdir,
+    .rmdir    = hello_rmdir,
+    .unlink   = hello_unlink,
+    .fsync    = hello_fsync
 };
 
 int main(int argc, char *argv[])
@@ -379,6 +438,9 @@ int main(int argc, char *argv[])
     Directory* d2 = new Directory("/hellod2", 0777);
 
     File* f3 = new File("/hellod1/hello3", 0666, "hello world3");
+
+    f1->parent = f2->parent = d1->parent = d2->parent = &root;
+    f3->parent = d1;
 
     root.dirent.push_back(f1);
     root.dirent.push_back(f2);
