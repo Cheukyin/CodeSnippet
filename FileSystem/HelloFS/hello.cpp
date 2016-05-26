@@ -27,6 +27,9 @@ using EntryType = mode_t;
 const EntryType DIR_T = S_IFDIR;
 const EntryType FILE_T = S_IFREG;
 
+struct Entry;
+static list<Entry*> allEntries;
+
 struct Entry
 {
     Entry(EntryType ty): type(ty) {}
@@ -37,7 +40,12 @@ struct Entry
         : name(name), type(ty), permission(perm)
     {}
 
-    virtual ~Entry() {}
+    virtual ~Entry()
+    {
+        auto it = std::find(allEntries.begin(), allEntries.end(), this);
+        if(it == allEntries.end()) return;
+        allEntries.erase(it);
+    }
 
     mode_t mode() { return type|permission; }
     virtual size_t size() { return 0; }
@@ -76,8 +84,6 @@ private:
         Entry::nlink = 1;
     }
 };
-
-static list<Entry*> allEntries;
 
 struct Directory: public Entry
 {
@@ -206,91 +212,136 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	return 0;
 }
 
-// static int hello_open(const char *path, struct fuse_file_info *fi)
-// {
-//     for(int i=0; i < filenum; i++)
-//         if(strcmp(path, files[i].name) == 0)
-//             return 0;
+static int hello_open(const char *path, struct fuse_file_info *fi)
+{
+	(void) fi;
 
-// 	return -ENOENT;
-// }
+    auto it = std::find_if(allEntries.begin(), allEntries.end(),
+        [path](Entry* ent)->bool{
+            return ent->name == path;
+        });
 
-// static int hello_read(const char *path, char *buf, size_t size, off_t offset,
-//                       struct fuse_file_info *fi)
-// {
-// 	(void) fi;
+    return it == allEntries.end() ? -ENOENT : 0;
+}
 
-//     for(int i=0; i < filenum; i++)
-//     {
-//         if(strcmp(path, files[i].name) == 0)
-//         {
-//             size_t len = strlen(files[i].content);
-//             if (offset < len)
-//             {
-//                 if(offset + size > len) size = len - offset;
-//                 memcpy(buf, files[i].content + offset, size);
-//             }
-//             else size = 0;
+static int hello_read(const char *path, char *buf, size_t size, off_t offset,
+                      struct fuse_file_info *fi)
+{
+	(void)fi;
 
-//             return size;
-//         }
-//     }
+    auto it = std::find_if(allEntries.begin(), allEntries.end(),
+        [path](Entry* ent)->bool{
+            return ent->name == path;
+        });
 
-//     return -ENOENT;
-// }
+    if(it == allEntries.end()) return -ENOENT;
 
-// static int hello_truncate(const char *path, off_t size)
-// {
-//     for(int i=0; i < filenum; i++)
-//     {
-//         if(strcmp(path, files[i].name) == 0)
-//         {
-//             files[i].content[size] = 0;
-//             return 0;
-//         }
-//     }
+    if((*it)->type == DIR_T) return -EINVAL;
 
-//     return -ENOENT;
-// }
+    if((*it)->type == FILE_T)
+    {
+        File* f = static_cast<File*>(*it);
+        size_t len = f->content.size();
+        if (offset < len)
+        {
+            if(offset + size > len) size = len - offset;
+            memcpy(buf, f->content.c_str() + offset, size);
+        }
+        else size = 0;
+    }
 
-// static int hello_write(const char *path, const char *buf, size_t size,
-//                        off_t offset, struct fuse_file_info *fi)
-// {
-//     (void)fi;
+    return size;
+}
 
-//     for(int i=0; i < filenum; i++)
-//     {
-//         if(strcmp(path, files[i].name) == 0)
-//         {
-//             size_t len = strlen(files[i].content);
+static int hello_truncate(const char *path, off_t size)
+{
+    auto it = std::find_if(allEntries.begin(), allEntries.end(),
+        [path](Entry* ent)->bool{
+            return ent->name == path;
+        });
 
-//             char *ptr = files[i].content;
-//             if(fi->flags | O_APPEND) ptr += len;
-//             strcpy(ptr, buf);
+    if(it == allEntries.end()) return -ENOENT;
 
-//             return size;
-//         }
-//     }
+    if((*it)->type == DIR_T) return -EINVAL;
 
-//     return -ENOENT;
-// }
+    if((*it)->type == FILE_T)
+    {
+        File* f = static_cast<File*>(*it);
+        if(size < f->content.size())
+            f->content = f->content.substr(0, size);
+    }
 
-// int hello_create(const char *path, mode_t mode, struct fuse_file_info* fi)
-// {
-//     int i = 0;
-//     for(; i < filenum; i++)
-//         if(strcmp(path, files[i].name) == 0)
-//             break;
+    return 0;
+}
 
-//     if((fi->flags|O_EXCL) && i < filenum) return -EEXIST;
+static int hello_write(const char *path, const char *buf, size_t size,
+                       off_t offset, struct fuse_file_info *fi)
+{
+    (void)fi;
 
-//     strcpy(files[filenum].name, path);
-//     files[i].content[filenum] = 0;
+    auto it = std::find_if(allEntries.begin(), allEntries.end(),
+        [path](Entry* ent)->bool{
+            return ent->name == path;
+        });
 
-//     filenum++;
+    if(it == allEntries.end()) return -ENOENT;
 
-//     return 0;
-// }
+    if((*it)->type == DIR_T) return -EINVAL;
+
+    if((*it)->type == FILE_T)
+    {
+        File* f = static_cast<File*>(*it);
+        if(fi->flags | O_APPEND) f->content += string(buf, buf+size);
+        else f->content = string(buf, buf+size);
+    }
+
+    return size;
+}
+
+int hello_create(const char *path, mode_t mode, struct fuse_file_info* fi)
+{
+    (void)fi;
+
+    auto it = std::find_if(allEntries.begin(), allEntries.end(),
+        [path](Entry* ent)->bool{
+            return ent->name == path;
+        });
+
+    if(it != allEntries.end() && fi->flags|O_EXCL)
+        return -EEXIST;
+
+    if(it != allEntries.end() && (*it)->type == DIR_T)
+        return -EINVAL;
+
+    File* f;
+    if(it != allEntries.end())
+        f = static_cast<File*>(*it);
+    else f = new File(path, 0666);
+
+    f->content = string();
+
+    if(it == allEntries.end())
+    {
+        int idx = f->name.size();
+        while(idx-- > 0)
+            if(f->name[idx] == '/') break;
+        string dirname(f->name.substr(0, idx));
+        if(idx == 0) dirname = "/";
+
+        it = std::find_if(allEntries.begin(), allEntries.end(),
+            [&dirname](Entry* ent)->bool{
+                return ent->name == dirname;
+            });
+
+        if(it == allEntries.end() || (*it)->type != DIR_T)
+            return -EINVAL;
+
+        static_cast<Directory*>(*it)->dirent.push_back(f);
+        allEntries.push_back(f);
+    }
+
+    return 0;
+}
 
 static int hello_release(const char *path, struct fuse_file_info *fi)
 {
@@ -308,12 +359,12 @@ static struct fuse_operations hello_oper = {
 	.getattr  = hello_getattr,
 	.access   = hello_access,
 	.readdir  = hello_readdir,
-    // .truncate = hello_truncate,
-    // .write    = hello_write,
-    // .create   = hello_create,
-	// .open     = hello_open,
-    // .release  = hello_release,
-	// .read     = hello_read,
+    .truncate = hello_truncate,
+    .write    = hello_write,
+    .create   = hello_create,
+	.open     = hello_open,
+    .release  = hello_release,
+	.read     = hello_read,
 };
 
 int main(int argc, char *argv[])
