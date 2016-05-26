@@ -150,7 +150,7 @@ void hello_destroy(void* private_data)
 
 static int hello_getattr(const char *path, struct stat *stbuf)
 {
-	memset(stbuf, 0, sizeof(struct stat));
+    memset(stbuf, 0, sizeof(struct stat));
 
     auto it = std::find_if(allEntries.begin(), allEntries.end(),
         [path](Entry* ent)->bool{
@@ -180,8 +180,8 @@ static int hello_access(const char *path, int mask)
 static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi)
 {
-	(void) offset;
-	(void) fi;
+    (void) offset;
+    (void) fi;
 
     auto it = std::find_if(allEntries.begin(), allEntries.end(),
         [path](Entry* ent)->bool{
@@ -209,12 +209,12 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         filler(buf, fname.c_str(), &st, 0);
     }
 
-	return 0;
+    return 0;
 }
 
 static int hello_open(const char *path, struct fuse_file_info *fi)
 {
-	(void) fi;
+    (void) fi;
 
     auto it = std::find_if(allEntries.begin(), allEntries.end(),
         [path](Entry* ent)->bool{
@@ -227,7 +227,7 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
 static int hello_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
-	(void)fi;
+    (void)fi;
 
     auto it = std::find_if(allEntries.begin(), allEntries.end(),
         [path](Entry* ent)->bool{
@@ -345,29 +345,29 @@ int hello_create(const char *path, mode_t mode, struct fuse_file_info* fi)
 
 static int hello_release(const char *path, struct fuse_file_info *fi)
 {
-	/* Just a stub.	 This method is optional and can safely be left
-	   unimplemented */
+    /* Just a stub.	 This method is optional and can safely be left
+    unimplemented */
 
-	(void) path;
-	(void) fi;
-	return 0;
+    (void) path;
+    (void) fi;
+    return 0;
 }
 
 static struct fuse_operations hello_oper = {
     .init     = hello_init,
     .destroy  = hello_destroy,
-	.getattr  = hello_getattr,
-	.access   = hello_access,
-	.readdir  = hello_readdir,
+    .getattr  = hello_getattr,
+    .access   = hello_access,
+    .readdir  = hello_readdir,
     .truncate = hello_truncate,
     .write    = hello_write,
     .create   = hello_create,
-	.open     = hello_open,
+    .open     = hello_open,
     .release  = hello_release,
-	.read     = hello_read,
+    .read     = hello_read,
 };
 
 int main(int argc, char *argv[])
 {
-	return fuse_main(argc, argv, &hello_oper, NULL);
+    return fuse_main(argc, argv, &hello_oper, NULL);
 }
