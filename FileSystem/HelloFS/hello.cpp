@@ -279,7 +279,29 @@ static int hello_write(const char *path, const char *buf, size_t size,
     return size;
 }
 
-int hello_create(const char *path, mode_t mode, struct fuse_file_info* fi)
+static int insert_entry(Entry* ent)
+{
+    int idx = ent->name.size();
+    while(idx-- > 0)
+    if(ent->name[idx] == '/') break;
+    string dirname(ent->name.substr(0, idx));
+    if(idx == 0) dirname = "/";
+
+    auto it = std::find_if(allEntries.begin(), allEntries.end(),
+        [&dirname](Entry* ent)->bool{
+            return ent->name == dirname;
+        });
+
+    if(it == allEntries.end() || (*it)->type != DIR_T)
+        return -EINVAL;
+
+    static_cast<Directory*>(*it)->dirent.push_back(ent);
+    allEntries.push_back(ent);
+
+    return 0;
+}
+
+static int hello_create(const char *path, mode_t mode, struct fuse_file_info* fi)
 {
     (void)fi;
 
@@ -302,26 +324,25 @@ int hello_create(const char *path, mode_t mode, struct fuse_file_info* fi)
     f->content = string();
 
     if(it == allEntries.end())
-    {
-        int idx = f->name.size();
-        while(idx-- > 0)
-            if(f->name[idx] == '/') break;
-        string dirname(f->name.substr(0, idx));
-        if(idx == 0) dirname = "/";
-
-        it = std::find_if(allEntries.begin(), allEntries.end(),
-            [&dirname](Entry* ent)->bool{
-                return ent->name == dirname;
-            });
-
-        if(it == allEntries.end() || (*it)->type != DIR_T)
-            return -EINVAL;
-
-        static_cast<Directory*>(*it)->dirent.push_back(f);
-        allEntries.push_back(f);
-    }
+        return insert_entry(f);
 
     return 0;
+}
+
+static int hello_mkdir(const char *path, mode_t mode)
+{
+    (void)mode;
+
+    auto it = std::find_if(allEntries.begin(), allEntries.end(),
+        [path](Entry* ent)->bool{
+            return ent->name == path;
+        });
+
+    if(it != allEntries.end()) return -EEXIST;
+
+    Directory* d = new Directory(path, 0666);
+
+    return insert_entry(d);
 }
 
 static int hello_release(const char *path, struct fuse_file_info *fi)
@@ -346,6 +367,7 @@ static struct fuse_operations hello_oper = {
     .open     = hello_open,
     .release  = hello_release,
     .read     = hello_read,
+    .mkdir    = hello_mkdir
 };
 
 int main(int argc, char *argv[])
