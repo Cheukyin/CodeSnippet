@@ -119,28 +119,6 @@ static Directory root("/", 0777);
 
 void* hello_init(struct fuse_conn_info *conn)
 {
-    File* f1 = new File("/hello1", 0666, "hello world1");
-    File* f2 = new File("/hello2", 0666, "hello world2");
-
-    Directory* d1 = new Directory("/hellod1", 0777);
-    Directory* d2 = new Directory("/hellod2", 0777);
-
-    File* f3 = new File("/hellod1/hello3", 0666, "hello world3");
-
-    root.dirent.push_back(f1);
-    root.dirent.push_back(f2);
-    root.dirent.push_back(d1);
-    root.dirent.push_back(d2);
-
-    d1->dirent.push_back(f3);
-
-    allEntries.push_back(&root);
-    allEntries.push_back(f1);
-    allEntries.push_back(f2);
-    allEntries.push_back(d1);
-    allEntries.push_back(d2);
-    allEntries.push_back(f3);
-
     return NULL;
 }
 
@@ -293,6 +271,9 @@ static int hello_write(const char *path, const char *buf, size_t size,
         File* f = static_cast<File*>(*it);
         if(fi->flags | O_APPEND) f->content += string(buf, buf+size);
         else f->content = string(buf, buf+size);
+
+        if(f->content[f->content.size()-1] == '\r')
+            f->content[f->content.size()-1] = '\n';
     }
 
     return size;
@@ -369,5 +350,27 @@ static struct fuse_operations hello_oper = {
 
 int main(int argc, char *argv[])
 {
+    File* f1 = new File("/hello1", 0666, "hello world1");
+    File* f2 = new File("/hello2", 0666, "hello world2");
+
+    Directory* d1 = new Directory("/hellod1", 0777);
+    Directory* d2 = new Directory("/hellod2", 0777);
+
+    File* f3 = new File("/hellod1/hello3", 0666, "hello world3");
+
+    root.dirent.push_back(f1);
+    root.dirent.push_back(f2);
+    root.dirent.push_back(d1);
+    root.dirent.push_back(d2);
+
+    d1->dirent.push_back(f3);
+
+    allEntries.push_back(&root);
+    allEntries.push_back(f1);
+    allEntries.push_back(f2);
+    allEntries.push_back(d1);
+    allEntries.push_back(d2);
+    allEntries.push_back(f3);
+
     return fuse_main(argc, argv, &hello_oper, NULL);
 }
