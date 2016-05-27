@@ -121,17 +121,17 @@ private:
 
 static Directory root("/", 0777);
 
-void* hello_init(struct fuse_conn_info *conn)
+void* simplefs_init(struct fuse_conn_info *conn)
 {
     root.parent = NULL;
     return NULL;
 }
 
-void hello_destroy(void* private_data)
+void simplefs_destroy(void* private_data)
 {
 }
 
-static int hello_getattr(const char *path, struct stat *stbuf)
+static int simplefs_getattr(const char *path, struct stat *stbuf)
 {
     memset(stbuf, 0, sizeof(struct stat));
 
@@ -148,7 +148,7 @@ static int hello_getattr(const char *path, struct stat *stbuf)
     return 0;
 }
 
-static int hello_access(const char *path, int mask)
+static int simplefs_access(const char *path, int mask)
 {
     auto it = std::find_if(allEntries.begin(), allEntries.end(),
         [path](Entry* ent)->bool{
@@ -160,7 +160,7 @@ static int hello_access(const char *path, int mask)
     return 0;
 }
 
-static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+static int simplefs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
                          off_t offset, struct fuse_file_info *fi)
 {
     (void) offset;
@@ -195,7 +195,7 @@ static int hello_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
     return 0;
 }
 
-static int hello_open(const char *path, struct fuse_file_info *fi)
+static int simplefs_open(const char *path, struct fuse_file_info *fi)
 {
     (void) fi;
 
@@ -207,7 +207,7 @@ static int hello_open(const char *path, struct fuse_file_info *fi)
     return it == allEntries.end() ? -ENOENT : 0;
 }
 
-static int hello_read(const char *path, char *buf, size_t size, off_t offset,
+static int simplefs_read(const char *path, char *buf, size_t size, off_t offset,
                       struct fuse_file_info *fi)
 {
     (void)fi;
@@ -236,7 +236,7 @@ static int hello_read(const char *path, char *buf, size_t size, off_t offset,
     return size;
 }
 
-static int hello_truncate(const char *path, off_t size)
+static int simplefs_truncate(const char *path, off_t size)
 {
     auto it = std::find_if(allEntries.begin(), allEntries.end(),
         [path](Entry* ent)->bool{
@@ -257,7 +257,7 @@ static int hello_truncate(const char *path, off_t size)
     return 0;
 }
 
-static int hello_write(const char *path, const char *buf, size_t size,
+static int simplefs_write(const char *path, const char *buf, size_t size,
                        off_t offset, struct fuse_file_info *fi)
 {
     (void)fi;
@@ -288,7 +288,7 @@ static int insert_entry(Entry* ent)
 {
     int idx = ent->name.size();
     while(idx-- > 0)
-    if(ent->name[idx] == '/') break;
+        if(ent->name[idx] == '/') break;
     string dirname(ent->name.substr(0, idx));
     if(idx == 0) dirname = "/";
 
@@ -298,7 +298,7 @@ static int insert_entry(Entry* ent)
         });
 
     if(it == allEntries.end() || (*it)->type != DIR_T)
-        return -EINVAL;
+        return -ENOENT;
 
     static_cast<Directory*>(*it)->dirent.push_back(ent);
     ent->parent = static_cast<Directory*>(*it);
@@ -307,7 +307,7 @@ static int insert_entry(Entry* ent)
     return 0;
 }
 
-static int hello_create(const char *path, mode_t mode, struct fuse_file_info* fi)
+static int simplefs_create(const char *path, mode_t mode, struct fuse_file_info* fi)
 {
     (void)fi;
 
@@ -335,7 +335,7 @@ static int hello_create(const char *path, mode_t mode, struct fuse_file_info* fi
     return 0;
 }
 
-static int hello_mkdir(const char *path, mode_t mode)
+static int simplefs_mkdir(const char *path, mode_t mode)
 {
     (void)mode;
 
@@ -374,22 +374,17 @@ static int rmhelper(const char *path)
     return 0;
 }
 
-static int hello_rmdir(const char *path)
+static int simplefs_rmdir(const char *path)
 {
     return rmhelper(path);
 }
 
-static int hello_unlink(const char *path)
+static int simplefs_unlink(const char *path)
 {
     return rmhelper(path);
 }
 
-static int hello_rename(const char *from, const char *to, unsigned int flags)
-{
-    (void)flags;
-}
-
-static int hello_release(const char *path, struct fuse_file_info *fi)
+static int simplefs_release(const char *path, struct fuse_file_info *fi)
 {
     /* Just a stub.	 This method is optional and can safely be left
     unimplemented */
@@ -399,7 +394,7 @@ static int hello_release(const char *path, struct fuse_file_info *fi)
     return 0;
 }
 
-static int hello_fsync(const char *path, int isdatasync,
+static int simplefs_fsync(const char *path, int isdatasync,
                        struct fuse_file_info *fi)
 {
     /* Just a stub.	 This method is optional and can safely be left
@@ -411,22 +406,22 @@ static int hello_fsync(const char *path, int isdatasync,
     return 0;
 }
 
-static struct fuse_operations hello_oper = {
-    .init     = hello_init,
-    .destroy  = hello_destroy,
-    .getattr  = hello_getattr,
-    .access   = hello_access,
-    .readdir  = hello_readdir,
-    .truncate = hello_truncate,
-    .write    = hello_write,
-    .create   = hello_create,
-    .open     = hello_open,
-    .release  = hello_release,
-    .read     = hello_read,
-    .mkdir    = hello_mkdir,
-    .rmdir    = hello_rmdir,
-    .unlink   = hello_unlink,
-    .fsync    = hello_fsync
+static struct fuse_operations simplefs_oper = {
+    .init     = simplefs_init,
+    .destroy  = simplefs_destroy,
+    .getattr  = simplefs_getattr,
+    .access   = simplefs_access,
+    .readdir  = simplefs_readdir,
+    .truncate = simplefs_truncate,
+    .write    = simplefs_write,
+    .create   = simplefs_create,
+    .open     = simplefs_open,
+    .release  = simplefs_release,
+    .read     = simplefs_read,
+    .mkdir    = simplefs_mkdir,
+    .rmdir    = simplefs_rmdir,
+    .unlink   = simplefs_unlink,
+    .fsync    = simplefs_fsync
 };
 
 int main(int argc, char *argv[])
@@ -456,5 +451,5 @@ int main(int argc, char *argv[])
     allEntries.push_back(d2);
     allEntries.push_back(f3);
 
-    return fuse_main(argc, argv, &hello_oper, NULL);
+    return fuse_main(argc, argv, &simplefs_oper, NULL);
 }
