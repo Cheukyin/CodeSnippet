@@ -1,5 +1,3 @@
-# Hello FileSystem
-
 # SimpleFS
 A simple in-memory filesystem implemented with fuse,
 supporting the creation and remove of directory and regular file, and the read/write operation of regular files
