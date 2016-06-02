@@ -18,6 +18,7 @@ bool User::login(const std::string& username)
     }
 
     username_ = username;
+    usernameSet.insert(username);
     stat_ = UserStat::LOGIN;
 
     std::cout << username_ << " login\n";
@@ -32,10 +33,21 @@ bool User::openRound(const std::string& roundname)
         error_ = "status is LOGOUT";
         return false;
     }
+    if(stat_ != UserStat::LOGIN)
+    {
+        error_ = "You haven't quit";
+        return false;
+    }
 
     quitRound();
     roundname_ = roundname;
     round_ = roundpool_.openRound(roundname);
+
+    if(!round_)
+    {
+        error_ = "Round already exists";
+        return false;
+    }
 
     std::cout << username_ << " open round "
               << roundname_ << "\n";
@@ -48,6 +60,11 @@ bool User::joinRound(const std::string& roundname)
     if(stat_ == UserStat::LOGOUT)
     {
         error_ = "status is LOGOUT";
+        return false;
+    }
+    if(stat_ != UserStat::LOGIN)
+    {
+        error_ = "You haven't quit";
         return false;
     }
 
