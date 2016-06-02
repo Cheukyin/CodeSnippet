@@ -32,7 +32,9 @@ struct Session
         : user(new User),
           fd(fd), epfd(epfd),
           readlen(0), writelen(0)
-    {}
+    {
+        user->session = this;
+    }
 
     ~Session()
     { if(user) delete user; }

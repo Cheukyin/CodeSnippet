@@ -93,6 +93,24 @@ void quitRoundHandler(Session* session)
 
 void castHandler(Session* session, const std::string& gesture)
 {
+    MsgType type = STATUS;
+    std::string info = "Cast Successfully";
+
+    UserGesture gest;
+    if(gesture == "scissor") gest = UserGesture::SCISSOR;
+    else if(gesture == "paper") gest = UserGesture::PAPER;
+    else if(gesture == "rock") gest = UserGesture::ROCK;
+    else gest = UserGesture::UNKNOWN;
+
+    if( gest != UserGesture::UNKNOWN && !session->user->cast(gest) )
+    {
+        info = session->user->error_;
+        size_t dataLen = info.size() + 1;
+        char* msg = encodeMsg(type, dataLen, info.c_str());
+        session->writeBuf(msg, Msg::HeadLen + dataLen);
+        free(msg);
+    }
+
 }
 
 void unknownMsgHandler(Session* session)

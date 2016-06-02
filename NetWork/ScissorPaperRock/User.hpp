@@ -2,11 +2,13 @@
 #define _SCISSORPAPERROCK_USER_
 
 #include "Round.hpp"
+#include "UserGesture.hpp"
 #include <unordered_set>
 #include <string>
 
 enum class UserStat{ LOGIN, ROUND, LOGOUT };
-enum class UserGesture{ SCISSOR, PAPER, ROCK };
+
+struct Session;
 
 class User
 {
@@ -24,6 +26,7 @@ public:
     bool openRound(const std::string& roundname);
     bool joinRound(const std::string& roundname);
     bool quitRound();
+    bool cast(UserGesture gesture);
     void logout();
 
     std::string username()
@@ -32,8 +35,12 @@ public:
     { return score_; }
     std::string round()
     { return roundname_; }
+    UserGesture gesture()
+    { return gesture_; }
 
     std::string error_;
+
+    Session* session;
 
 private:
     RoundPool& roundpool_;

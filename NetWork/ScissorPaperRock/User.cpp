@@ -78,6 +78,39 @@ bool User::joinRound(const std::string& roundname)
     return justJoinRound_();
 }
 
+bool User::cast(UserGesture gesture)
+{
+    if(stat_ == UserStat::LOGOUT)
+    {
+        error_ = "status is LOGOUT";
+        return false;
+    }
+    if(stat_ != UserStat::ROUND)
+    {
+        error_ = "You haven't joined a round";
+        return false;
+    }
+
+    std::string gestureName;
+    switch(gesture)
+    {
+        case UserGesture::SCISSOR:
+            gestureName = "scissor"; break;
+        case UserGesture::PAPER:
+            gestureName = "paper"; break;
+        case UserGesture::ROCK:
+            gestureName = "rock"; break;
+
+        default: break;
+    }
+    std::cout << username_ << " cast "
+              << gestureName << "\n";
+
+    round_->registerGesture(gesture);
+
+    return true;
+}
+
 bool User::quitRound()
 {
     if(stat_ == UserStat::LOGOUT)
