@@ -35,6 +35,7 @@ public:
         return pool;
     }
 
+    void delRound(const std::string& roundname);
     Round* openRound(const std::string& roundname);
     Round* getRound(const std::string& roundname);
 

@@ -39,11 +39,14 @@ void Round::registerGesture(UserGesture g)
 
 bool Round::judge()
 {
+    if(users_.size() == 1) return false;
     if(scissorCnt + paperCnt + rockCnt < users_.size()) return false;
+
+    int gestureClassNum = (scissorCnt > 0) + (paperCnt > 0) + (rockCnt > 0);
 
     std::unordered_map<int, std::string> gesture2result;
 
-    if(scissorCnt > 0 && paperCnt > 0 && rockCnt > 0)
+    if(gestureClassNum == 1 || gestureClassNum == 3)
     {
         gesture2result[CastGesture2Int(UserGesture::SCISSOR)] = "Even";
         gesture2result[CastGesture2Int(UserGesture::ROCK)] = "Even";
@@ -77,6 +80,8 @@ bool Round::judge()
         free(msg);
     }
 
+    scissorCnt = 0, rockCnt = 0, paperCnt = 0;
+
     return true;
 }
 
@@ -94,4 +99,11 @@ Round* RoundPool::getRound(const std::string& roundname)
     if(rounds_.find(roundname) == rounds_.end())
         return nullptr;
     return rounds_[roundname];
+}
+
+void RoundPool::delRound(const std::string& roundname)
+{
+    auto it = rounds_.find(roundname);
+    if(it == rounds_.end()) return;
+    rounds_.erase(it);
 }

@@ -151,28 +151,36 @@ void Server::run()
             if(evlist[i].events & EPOLLIN)
             {
                 if(s->fd == listener) do_accecpt(listener);
-                else
-                {
-                    if((r = do_read(s)) == -1)
-                    {
-                        if(epoll_ctl(epfd, EPOLL_CTL_DEL, s->fd, NULL) == -1)
-                        { perror("epoll_ctl del"); continue; }
-                        close(s->fd);
-                        delete s;
-                        printf("disconnect\n");
-                        numOpenFds--;
-                    }
-                }
+                else r = do_read(s);
             }
 
             if(r >= 0 && evlist[i].events & EPOLLOUT)
             {
                 if(s->fd == listener) continue;
-                do_write(s);
+                if((r = do_write(s)) < 0) perror("send buffer");
             }
+
+            if( (r < 0) || (evlist[i].events & (EPOLLHUP | EPOLLERR)) )
+                shutdownSession(s);
         }
     }
 
     free(evlist);
     close(epfd);
+}
+
+int Server::shutdownSession(Session* s)
+{
+    if(epoll_ctl(epfd, EPOLL_CTL_DEL, s->fd, NULL) == -1)
+    { perror("epoll_ctl del"); return -1; }
+    close(s->fd);
+
+    s->user->logout();
+
+    delete s;
+    numOpenFds--;
+
+    printf("disconnect\n");
+
+    return 0;
 }

@@ -25,6 +25,7 @@ private:
     int do_read(Session* s);
     int do_write(Session* s);
     int do_accecpt(int fd);
+    int shutdownSession(Session* s);
 };
 
 #endif // _SCISSORPAPERROCK_SERVER_

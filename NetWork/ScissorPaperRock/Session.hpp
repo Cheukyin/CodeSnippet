@@ -19,11 +19,7 @@ struct Session
     int fd;
     int epfd;
 
-    char readbuffer[BUFFERSIZE];
     int readlen;
-
-    char writebuffer[BUFFERSIZE];
-    int writelen;
 
     Session(int fd): user(nullptr), fd(fd)
     {}
@@ -48,6 +44,13 @@ struct Session
     void lookaheadBuf(char* dest, int bytes);
     int writeBuf(const char* buf, int bytes);
     int sendBuf();
+
+private:
+    char readbuffer[BUFFERSIZE];
+
+    char writebuffer[BUFFERSIZE];
+    int writelen;
+
 };
 
 #endif // _SCISSORPAPERROCK_SESSION_

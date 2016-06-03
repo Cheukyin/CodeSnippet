@@ -91,6 +91,9 @@ bool User::cast(UserGesture gesture)
         return false;
     }
 
+    gesture_ = gesture;
+    round_->registerGesture(gesture);
+
     std::string gestureName;
     switch(gesture)
     {
@@ -105,8 +108,6 @@ bool User::cast(UserGesture gesture)
     }
     std::cout << username_ << " cast "
               << gestureName << "\n";
-
-    round_->registerGesture(gesture);
 
     return true;
 }
@@ -125,7 +126,11 @@ bool User::quitRound()
                   << roundname_ << "\n";
 
         round_->quitUser(this);
-        if( round_->empty() ) delete round_;
+        if( round_->empty() )
+        {
+            roundpool_.delRound(roundname_);
+            delete round_;
+        }
         round_ = nullptr;
         stat_ = UserStat::LOGIN;
         return true;
@@ -145,7 +150,11 @@ void User::logout()
         return;
     }
 
-    if(round_) round_->quitUser(this);
+    auto it = usernameSet.find(username_);
+    if(it != usernameSet.end()) usernameSet.erase(it);
+
+    quitRound();
+
     stat_ = UserStat::LOGOUT;
 
     std::cout << username_ << " logout\n";
@@ -167,6 +176,9 @@ bool User::justJoinRound_()
 
 User::~User()
 {
-    if(stat_ == UserStat::ROUND)
+    auto it = usernameSet.find(username_);
+    if(it != usernameSet.end()) usernameSet.erase(it);
+
+    if(stat_ == UserStat::ROUND && round_)
         round_->quitUser(this);
 }
