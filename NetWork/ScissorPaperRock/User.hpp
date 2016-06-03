@@ -29,13 +29,13 @@ public:
     bool cast(UserGesture gesture);
     void logout();
 
-    std::string username()
+    std::string username() const
     { return username_; }
-    int score()
+    int score() const
     { return score_; }
-    std::string round()
+    std::string round() const
     { return roundname_; }
-    UserGesture gesture()
+    UserGesture gesture() const
     { return gesture_; }
 
     std::string error_;
