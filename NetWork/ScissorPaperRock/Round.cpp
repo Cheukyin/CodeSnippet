@@ -2,6 +2,7 @@
 #include "User.hpp"
 #include "Message.hpp"
 #include "Session.hpp"
+#include "Fifo.hpp"
 
 void Round::joinUser(User* user)
 {
@@ -74,9 +75,11 @@ bool Round::judge()
     {
         info = gesture2result[CastGesture2Int( user->gesture() )];
 
+        extern int responseFifofd;
+
         size_t dataLen = info.size() + 1;
-        char* msg = encodeMsg(type, dataLen, info.c_str());
-        user->session->writeBuf(msg, Msg::HeadLen + dataLen);
+        Msg* msg = wrapMsg(type, dataLen, info.c_str());
+        sendFifoMsg(responseFifofd, user->session, msg);
         free(msg);
     }
 

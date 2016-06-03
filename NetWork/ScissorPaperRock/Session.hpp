@@ -1,8 +1,6 @@
 #ifndef _SCISSORPAPERROCK_SESSION_
 #define _SCISSORPAPERROCK_SESSION_
 
-#include "User.hpp"
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
@@ -14,26 +12,21 @@ struct Session
 {
     static const int BUFFERSIZE = 512;
 
-    User* user;
-
     int fd;
     int epfd;
 
     int readlen;
 
-    Session(int fd): user(nullptr), fd(fd)
+    Session(int fd): fd(fd)
     {}
 
     Session(int fd, int epfd)
-        : user(new User),
-          fd(fd), epfd(epfd),
+        : fd(fd), epfd(epfd),
           readlen(0), writelen(0)
-    {
-        user->session = this;
-    }
+    {}
 
     ~Session()
-    { if(user) delete user; }
+    {}
 
     // connection closed, return -1
     // read nothing, return 0

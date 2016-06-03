@@ -38,7 +38,8 @@ std::pair<Session*, Msg*> recvFifoMsg(int fifofd)
     readn(fifofd, (char*)&msgLen, sizeof(Msg::len_t));
 
     Msg* msg = (Msg*)malloc(sizeof(Msg::len_t) + msgLen);
-    readn(fifofd, ((char*)&msg) + sizeof(Msg::len_t), msgLen);
+    msg->len = msgLen;
+    readn(fifofd, ((char*)msg) + sizeof(Msg::len_t), msgLen);
 
     return std::make_pair(s, msg);
 }

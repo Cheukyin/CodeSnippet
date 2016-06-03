@@ -7,17 +7,45 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unordered_map>
+#include <assert.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-static int requestFifofd;
-static int responseFifofd;
+int requestFifofd;
+int responseFifofd;
+
+static std::unordered_map<Session*, User*> s2u;
+
+static User* user;
+
+static void sigintHandler(int sign_no)
+{
+    close(requestFifofd);
+    close(responseFifofd);
+    for(auto& p : s2u)
+        if(p.second) delete user;
+
+    printf("child exit\n");
+    exit(0);
+}
 
 void loginHandler(Session* session, const std::string& username)
 {
     MsgType type = STATUS;
     std::string info = "Login Successfully";
 
-    if( !session->user->login(username) )
-        info = session->user->error_;
+    assert(user == nullptr);
+    user = new User;
+    user->session = session;
+
+    if( !user->login(username) )
+    {
+        info = user->error_;
+        delete user;
+    }
+    else s2u[session] = user;
 
     size_t dataLen = info.size() + 1;
     Msg* msg = wrapMsg(type, dataLen, info.c_str());
@@ -30,7 +58,8 @@ void logoutHandler(Session* session)
     MsgType type = STATUS;
     std::string info = "Logout Successfully";
 
-    session->user->logout();
+    assert(user != nullptr);
+    user->logout();
 
     size_t dataLen = info.size() + 1;
     Msg* msg = wrapMsg(type, dataLen, info.c_str());
@@ -40,7 +69,15 @@ void logoutHandler(Session* session)
 
 void shutdownHandler(Session* session)
 {
-    session->user->logout();
+    assert(user != nullptr);
+    user->logout();
+
+    auto it = s2u.find(session);
+    if(it != s2u.end())
+    {
+        delete user;
+        s2u.erase(it);
+    }
 }
 
 void infoHandler(Session* session, const std::string& infotype)
@@ -48,12 +85,14 @@ void infoHandler(Session* session, const std::string& infotype)
     MsgType type = STATUS;
     std::string info = "Unkown Info Type";
 
+    assert(user != nullptr);
+
     if(infotype == "username")
-        info = session->user->username();
+        info = user->username();
     else if(infotype == "score")
-        info = std::to_string( session->user->score() );
+        info = std::to_string( user->score() );
     else if(infotype == "round")
-        info = session->user->round();
+        info = user->round();
 
     size_t dataLen = info.size() + 1;
     Msg* msg = wrapMsg(type, dataLen, info.c_str());
@@ -66,8 +105,10 @@ void openRoundHandler(Session* session, const std::string& roundname)
     MsgType type = STATUS;
     std::string info = "Open Round Successfully";
 
-    if( !session->user->openRound(roundname) )
-        info = session->user->error_;
+    assert(user != nullptr);
+
+    if( !user->openRound(roundname) )
+        info = user->error_;
 
     size_t dataLen = info.size() + 1;
     Msg* msg = wrapMsg(type, dataLen, info.c_str());
@@ -80,8 +121,10 @@ void joinRoundHandler(Session* session, const std::string& roundname)
     MsgType type = STATUS;
     std::string info = "Join Round Successfully";
 
-    if( !session->user->joinRound(roundname) )
-        info = session->user->error_;
+    assert(user != nullptr);
+
+    if( !user->joinRound(roundname) )
+        info = user->error_;
 
     size_t dataLen = info.size() + 1;
     Msg* msg = wrapMsg(type, dataLen, info.c_str());
@@ -94,8 +137,10 @@ void quitRoundHandler(Session* session)
     MsgType type = STATUS;
     std::string info = "Quit Round Successfully";
 
-    if( !session->user->quitRound() )
-        info = session->user->error_;
+    assert(user != nullptr);
+
+    if( !user->quitRound() )
+        info = user->error_;
 
     size_t dataLen = info.size() + 1;
     Msg* msg = wrapMsg(type, dataLen, info.c_str());
@@ -108,15 +153,17 @@ void castHandler(Session* session, const std::string& gesture)
     MsgType type = STATUS;
     std::string info = "Cast Successfully";
 
+    assert(user != nullptr);
+
     UserGesture gest;
     if(gesture == "scissor") gest = UserGesture::SCISSOR;
     else if(gesture == "paper") gest = UserGesture::PAPER;
     else if(gesture == "rock") gest = UserGesture::ROCK;
     else gest = UserGesture::UNKNOWN;
 
-    if( gest != UserGesture::UNKNOWN && !session->user->cast(gest) )
+    if( gest != UserGesture::UNKNOWN && !user->cast(gest) )
     {
-        info = session->user->error_;
+        info = user->error_;
         size_t dataLen = info.size() + 1;
         Msg* msg = wrapMsg(type, dataLen, info.c_str());
         sendFifoMsg(responseFifofd, session, msg);
@@ -138,8 +185,10 @@ void unknownMsgHandler(Session* session)
 
 void msgDispatch()
 {
+    signal(SIGINT, sigintHandler);
+
     requestFifofd = ::open(requestFifoName, O_RDONLY);
-    responseFifofd = ::open(requestFifoName, O_WRONLY);
+    responseFifofd = ::open(responseFifoName, O_WRONLY);
     if(requestFifofd < 0 || responseFifofd < 0)
     { perror("open"); throw; }
 
@@ -149,6 +198,10 @@ void msgDispatch()
         p = recvFifoMsg(requestFifofd);
         Session* session = p.first;
         Msg* msg = p.second;
+
+        auto it = s2u.find(session);
+        if(it == s2u.end()) user = nullptr;
+        else user = it->second;
 
         switch(msg->type)
         {

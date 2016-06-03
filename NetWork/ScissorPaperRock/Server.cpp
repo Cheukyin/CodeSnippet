@@ -196,7 +196,7 @@ int Server::shutdownSession(Session* s)
 
     Msg msg;
     msg.len = sizeof(Msg::type_t);
-    msg.type = MsgType::LOGOUT;
+    msg.type = MsgType::SHUTDOWN;
     sendFifoMsg(requestFifofd, s, &msg);
 
     delete s;
@@ -223,7 +223,7 @@ Server::Server(int p)
     else if(childPid == 0)
     {
         requestFifofd = ::open(requestFifoName, O_WRONLY);
-        responseFifofd = ::open(requestFifoName, O_RDONLY);
+        responseFifofd = ::open(responseFifoName, O_RDONLY);
         if(requestFifofd < 0 || responseFifofd < 0)
         { perror("open"); throw; }
     }
@@ -238,5 +238,9 @@ Server::~Server()
         evlist = nullptr;
     }
     close(epfd);
+
+    close(requestFifofd);
+    close(responseFifofd);
+
     waitpid( childPid, NULL, 0 );
 }
