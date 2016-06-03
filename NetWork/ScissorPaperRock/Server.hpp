@@ -3,6 +3,7 @@
 
 /* For sockaddr_in */
 #include <netinet/in.h>
+#include <sys/epoll.h>
 #include <map>
 
 struct Session;
@@ -10,7 +11,8 @@ struct Session;
 class Server
 {
 public:
-    Server(int p): port(p) {}
+    Server(int p);
+    ~Server();
 
     void run();
 
@@ -21,10 +23,19 @@ private:
     int epfd;
     int numOpenFds;
 
+    int eventCnt;
+    struct epoll_event *evlist;
+
+    int requestFifofd;
+    int responseFifofd;
+
+    int childPid;
+
     int prepare();
     int do_read(Session* s);
     int do_write(Session* s);
     int do_accecpt(int fd);
+    int do_recvResp();
     int shutdownSession(Session* s);
 };
 

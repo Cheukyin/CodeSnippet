@@ -15,6 +15,8 @@ enum MsgType{
     QUITROUND,
     CAST, // -------- client side -------
 
+    SHUTDOWN,
+
     STATUS, // server side
 
     UNKNOWN
@@ -33,5 +35,7 @@ struct Msg
 
 void decodeMsg(Msg* msg);
 char* encodeMsg(MsgType type, size_t dataLen, const char* data);
+Msg* wrapMsg(MsgType type, size_t dataLen, const char* data);
+void encodeMsg(Msg* msg);
 
 #endif // _SCISSORPAPERROCK_MESSAGE_

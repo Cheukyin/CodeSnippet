@@ -1,8 +1,15 @@
 #include "Session.hpp"
 #include "User.hpp"
 #include "MsgHandler.hpp"
+#include "Fifo.hpp"
 #include <string>
 #include <algorithm>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+static int requestFifofd;
+static int responseFifofd;
 
 void loginHandler(Session* session, const std::string& username)
 {
@@ -13,8 +20,8 @@ void loginHandler(Session* session, const std::string& username)
         info = session->user->error_;
 
     size_t dataLen = info.size() + 1;
-    char* msg = encodeMsg(type, dataLen, info.c_str());
-    session->writeBuf(msg, Msg::HeadLen + dataLen);
+    Msg* msg = wrapMsg(type, dataLen, info.c_str());
+    sendFifoMsg(responseFifofd, session, msg);
     free(msg);
 }
 
@@ -26,9 +33,14 @@ void logoutHandler(Session* session)
     session->user->logout();
 
     size_t dataLen = info.size() + 1;
-    char* msg = encodeMsg(type, dataLen, info.c_str());
-    session->writeBuf(msg, Msg::HeadLen + dataLen);
+    Msg* msg = wrapMsg(type, dataLen, info.c_str());
+    sendFifoMsg(responseFifofd, session, msg);
     free(msg);
+}
+
+void shutdownHandler(Session* session)
+{
+    session->user->logout();
 }
 
 void infoHandler(Session* session, const std::string& infotype)
@@ -44,8 +56,8 @@ void infoHandler(Session* session, const std::string& infotype)
         info = session->user->round();
 
     size_t dataLen = info.size() + 1;
-    char* msg = encodeMsg(type, dataLen, info.c_str());
-    session->writeBuf(msg, Msg::HeadLen + dataLen);
+    Msg* msg = wrapMsg(type, dataLen, info.c_str());
+    sendFifoMsg(responseFifofd, session, msg);
     free(msg);
 }
 
@@ -58,8 +70,8 @@ void openRoundHandler(Session* session, const std::string& roundname)
         info = session->user->error_;
 
     size_t dataLen = info.size() + 1;
-    char* msg = encodeMsg(type, dataLen, info.c_str());
-    session->writeBuf(msg, Msg::HeadLen + dataLen);
+    Msg* msg = wrapMsg(type, dataLen, info.c_str());
+    sendFifoMsg(responseFifofd, session, msg);
     free(msg);
 }
 
@@ -72,8 +84,8 @@ void joinRoundHandler(Session* session, const std::string& roundname)
         info = session->user->error_;
 
     size_t dataLen = info.size() + 1;
-    char* msg = encodeMsg(type, dataLen, info.c_str());
-    session->writeBuf(msg, Msg::HeadLen + dataLen);
+    Msg* msg = wrapMsg(type, dataLen, info.c_str());
+    sendFifoMsg(responseFifofd, session, msg);
     free(msg);
 }
 
@@ -86,8 +98,8 @@ void quitRoundHandler(Session* session)
         info = session->user->error_;
 
     size_t dataLen = info.size() + 1;
-    char* msg = encodeMsg(type, dataLen, info.c_str());
-    session->writeBuf(msg, Msg::HeadLen + dataLen);
+    Msg* msg = wrapMsg(type, dataLen, info.c_str());
+    sendFifoMsg(responseFifofd, session, msg);
     free(msg);
 }
 
@@ -106,11 +118,10 @@ void castHandler(Session* session, const std::string& gesture)
     {
         info = session->user->error_;
         size_t dataLen = info.size() + 1;
-        char* msg = encodeMsg(type, dataLen, info.c_str());
-        session->writeBuf(msg, Msg::HeadLen + dataLen);
+        Msg* msg = wrapMsg(type, dataLen, info.c_str());
+        sendFifoMsg(responseFifofd, session, msg);
         free(msg);
     }
-
 }
 
 void unknownMsgHandler(Session* session)
@@ -119,40 +130,57 @@ void unknownMsgHandler(Session* session)
     std::string info = "Unkown CMD";
 
     size_t dataLen = info.size() + 1;
-    char* msg = encodeMsg(type, dataLen, info.c_str());
-    session->writeBuf(msg, Msg::HeadLen + dataLen);
+    Msg* msg = wrapMsg(type, dataLen, info.c_str());
+    sendFifoMsg(responseFifofd, session, msg);
     free(msg);
 }
 
 
-void msgDispatch(Session* session, const Msg* msg)
+void msgDispatch()
 {
-    switch(msg->type)
-    {
-        case LOGIN:
-            loginHandler( session, std::string(msg->data) );
-            break;
-        case LOGOUT:
-            logoutHandler(session);
-            break;
-        case INFO:
-            infoHandler( session, std::string(msg->data) );
-            break;
-        case OPENROUND:
-            openRoundHandler( session, std::string(msg->data) );
-            break;
-        case JOINROUND:
-            joinRoundHandler( session, std::string(msg->data) );
-            break;
-        case QUITROUND:
-            quitRoundHandler(session);
-            break;
-        case CAST:
-            castHandler( session, std::string(msg->data) );
-            break;
+    requestFifofd = ::open(requestFifoName, O_RDONLY);
+    responseFifofd = ::open(requestFifoName, O_WRONLY);
+    if(requestFifofd < 0 || responseFifofd < 0)
+    { perror("open"); throw; }
 
-        default:
-            unknownMsgHandler(session);
-            break;
+    std::pair<Session*, Msg*> p;
+    while(true)
+    {
+        p = recvFifoMsg(requestFifofd);
+        Session* session = p.first;
+        Msg* msg = p.second;
+
+        switch(msg->type)
+        {
+            case LOGIN:
+                loginHandler( session, std::string(msg->data) );
+                break;
+            case LOGOUT:
+                logoutHandler(session);
+                break;
+            case INFO:
+                infoHandler( session, std::string(msg->data) );
+                break;
+            case OPENROUND:
+                openRoundHandler( session, std::string(msg->data) );
+                break;
+            case JOINROUND:
+                joinRoundHandler( session, std::string(msg->data) );
+                break;
+            case QUITROUND:
+                quitRoundHandler(session);
+                break;
+            case CAST:
+                castHandler( session, std::string(msg->data) );
+                break;
+            case SHUTDOWN:
+                shutdownHandler(session);
+
+            default:
+                unknownMsgHandler(session);
+                break;
+        }
+
+        free(msg);
     }
 }

@@ -1,7 +1,10 @@
+#ifndef _SCISSORPAPERROCK_FIFO_
+#define _SCISSORPAPERROCK_FIFO_
+
 #include <utility>
 
-const char* requestFifoName = "/tmp/scissorpaperrockRequest";
-const char* responseFifoName = "/tmp/scissorpaperrockResponse";
+static const char* requestFifoName = "/tmp/scissorpaperrockRequest";
+static const char* responseFifoName = "/tmp/scissorpaperrockResponse";
 
 struct Session;
 struct Msg;
@@ -12,5 +15,8 @@ struct Msg;
 //     Msg msg;
 // };
 
+int makeFifo(const char* fifo_name);
 void sendFifoMsg(int fifofd, Session* session, Msg* msg);
-std::pair<Session*, Msg*> decodeFifoMsg(int fifofd);
+std::pair<Session*, Msg*> recvFifoMsg(int fifofd);
+
+#endif // _SCISSORPAPERROCK_FIFO_

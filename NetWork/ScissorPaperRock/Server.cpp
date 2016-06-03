@@ -1,13 +1,12 @@
 #include "Server.hpp"
 #include "Session.hpp"
 #include "MsgHandler.hpp"
+#include "Fifo.hpp"
 
 /* For socket functions */
 #include <sys/socket.h>
 /* For fcntl */
 #include <fcntl.h>
-/* for epoll */
-#include <sys/epoll.h>
 
 #include <assert.h>
 #include <unistd.h>
@@ -15,6 +14,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 static void make_nonblocking(int fd)
 { fcntl(fd, F_SETFL, O_NONBLOCK); }
@@ -44,11 +45,28 @@ int Server::do_read(Session* s)
 
     // printf("%d, %d, %s\n", msg->len, msg->type, msg->data);
 
-    msgDispatch(s, msg);
+    // msgDispatch(s, msg);
+
+    sendFifoMsg(requestFifofd, s, msg);
 
     free(msg);
 
     return sizeof(Msg::len_t) + msgLen;
+}
+
+int Server::do_recvResp()
+{
+    auto p = recvFifoMsg(responseFifofd);
+    Session* s = p.first;
+    Msg* msg = p.second;
+
+    size_t msgLen = msg->len + sizeof(Msg::len_t);
+    encodeMsg(msg);
+    s->writeBuf((char*)msg, msgLen);
+
+    free(msg);
+
+    return 1;
 }
 
 int Server::do_write(Session* s)
@@ -127,9 +145,9 @@ void Server::run()
     if(epoll_ctl(epfd, EPOLL_CTL_ADD, listener, &ev) == -1)
     { perror("epoll_ctl add listener"); return; }
 
-    int eventCnt = 20;
-    struct epoll_event *evlist \
-        = (struct epoll_event*)malloc(sizeof(struct epoll_event) * eventCnt);
+    ev.data.ptr = new Session(responseFifofd);
+    if(epoll_ctl(epfd, EPOLL_CTL_ADD, responseFifofd, &ev) == -1)
+    { perror("epoll_ctl add responseFifofd"); return; }
 
     numOpenFds = 1;
     while(numOpenFds > 0)
@@ -150,7 +168,10 @@ void Server::run()
             int r = 0;
             if(evlist[i].events & EPOLLIN)
             {
-                if(s->fd == listener) do_accecpt(listener);
+                if(s->fd == listener)
+                { do_accecpt(listener); continue; }
+                if(s->fd == responseFifofd)
+                { do_recvResp(); continue; }
                 else r = do_read(s);
             }
 
@@ -164,9 +185,6 @@ void Server::run()
                 shutdownSession(s);
         }
     }
-
-    free(evlist);
-    close(epfd);
 }
 
 int Server::shutdownSession(Session* s)
@@ -174,13 +192,51 @@ int Server::shutdownSession(Session* s)
     if(epoll_ctl(epfd, EPOLL_CTL_DEL, s->fd, NULL) == -1)
     { perror("epoll_ctl del"); return -1; }
     close(s->fd);
+    numOpenFds--;
 
-    s->user->logout();
+    Msg msg;
+    msg.len = sizeof(Msg::type_t);
+    msg.type = MsgType::LOGOUT;
+    sendFifoMsg(requestFifofd, s, &msg);
 
     delete s;
-    numOpenFds--;
 
     printf("disconnect\n");
 
     return 0;
+}
+
+Server::Server(int p)
+    : port(p), eventCnt(20),
+      evlist( (struct epoll_event*)malloc(sizeof(struct epoll_event) * eventCnt) )
+{
+    int res = makeFifo(requestFifoName);
+    if(res < 0) throw;
+    res = makeFifo(responseFifoName);
+    if(res < 0) throw;
+
+    childPid = fork();
+    if(childPid > 0)
+    {
+        msgDispatch();
+    }
+    else if(childPid == 0)
+    {
+        requestFifofd = ::open(requestFifoName, O_WRONLY);
+        responseFifofd = ::open(requestFifoName, O_RDONLY);
+        if(requestFifofd < 0 || responseFifofd < 0)
+        { perror("open"); throw; }
+    }
+    else { perror("fork"); throw; }
+}
+
+Server::~Server()
+{
+    if(evlist)
+    {
+        free(evlist);
+        evlist = nullptr;
+    }
+    close(epfd);
+    waitpid( childPid, NULL, 0 );
 }

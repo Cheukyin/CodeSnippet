@@ -4,7 +4,22 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <utility>
+#include <stdio.h>
 
+int makeFifo(const char* fifo_name)
+{
+    if(access(fifo_name, F_OK) == -1)
+    {
+        int res = mkfifo(fifo_name, 0777);
+        if(res != 0)
+        {
+            perror("mkfifo");
+            return -1;
+        }
+    }
+
+    return 1;
+}
 
 void sendFifoMsg(int fifofd, Session* session, Msg* msg)
 {
@@ -14,7 +29,7 @@ void sendFifoMsg(int fifofd, Session* session, Msg* msg)
     writen(fifofd, (char*)msg, msgLen);
 }
 
-std::pair<Session*, Msg*> decodeFifoMsg(int fifofd)
+std::pair<Session*, Msg*> recvFifoMsg(int fifofd)
 {
     Session* s;
     readn(fifofd, (char*)&s, sizeof(s));

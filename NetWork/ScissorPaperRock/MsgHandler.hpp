@@ -8,6 +8,7 @@ struct Session;
 
 void loginHandler(Session* session, const std::string& username);
 void logoutHandler(Session* session);
+void shutdownHandler(Session* session);
 void infoHandler(Session* session, const std::string& infotype);
 void openRoundHandler(Session* session, const std::string& roundname);
 void joinRoundHandler(Session* session, const std::string& roundname);
@@ -17,6 +18,6 @@ void castHandler(Session* session, const std::string& gesture);
 void unknownMsgHandler(Session* session);
 
 
-void msgDispatch(Session* session, const Msg* msg);
+void msgDispatch();
 
 #endif // _SCISSORPAPERROCK_MSGHANDLER_
