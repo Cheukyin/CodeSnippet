@@ -64,7 +64,7 @@ void Server::startRoundTimer(Msg* msg)
     if(timeout > 0) timeout *= 1000;
 }
 
-void Server::sendStatus(Session* s, Msg* msg)
+void Server::sendResponse(Session* s, Msg* msg)
 {
     size_t msgLen = msg->len + sizeof(Msg::len_t);
     encodeMsg(msg);
@@ -95,9 +95,9 @@ int Server::do_read(Session* s)
 
 
     s->timer->deactive();
-    s->timer.reset( new Timer( *(s->timer) ) );
-    s->timer->active();
+    s->timer.reset(new Timer);
     s->timer->setPeriod(SessionTimeout);
+    s->timer->cb = std::bind(&Server::shutdownSession, this, s);
 
     timeout = timerQ.pushTimer(s->timer);
     if(timeout > 0) timeout *= 1000;
@@ -121,8 +121,8 @@ int Server::do_recvResp()
         startRoundTimer(msg);
     else if(msg->type == DISABLEROUNDTIMER)
         disableRoundTimer(msg);
-    else if(msg->type == STATUS)
-        sendStatus(s, msg);
+    else // if(msg->type == STATUS || msg->type == HEARTBEAT)
+        sendResponse(s, msg);
 
     return 1;
 }

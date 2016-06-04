@@ -7,8 +7,8 @@
 #include <memory>
 #include <functional>
 
-const int SessionTimeout = 1000; // sec
-const int RoundTimeout = 10; // sec
+const int SessionTimeout = 10; // sec
+const int RoundTimeout = 20; // sec
 
 struct Timer
 {

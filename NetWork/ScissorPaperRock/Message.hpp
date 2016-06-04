@@ -13,6 +13,7 @@ enum MsgType{
     OPENROUND,
     JOINROUND,
     QUITROUND,
+    HEARTBEAT,
     CAST, // -------- client side -------
 
     SHUTDOWN, // shutdown user without notifying

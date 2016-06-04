@@ -49,7 +49,7 @@ private:
 
     void disableRoundTimer(Msg* msg);
     void startRoundTimer(Msg* msg);
-    void sendStatus(Session* s, Msg* msg);
+    void sendResponse(Session* s, Msg* msg);
 };
 
 #endif // _SCISSORPAPERROCK_SERVER_

@@ -15,6 +15,7 @@ void joinRoundHandler(Session* session, const std::string& roundname);
 void quitRoundHandler(Session* session);
 void castHandler(Session* session, const std::string& gesture);
 void roundtimeoutHandler(const std::string& roundname);
+void heartbeatHandler(Session* session);
 
 void unknownMsgHandler(Session* session);
 

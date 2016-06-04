@@ -1,5 +1,6 @@
 #include "NetworkUtils.hpp"
 #include "Message.hpp"
+#include "Timer.hpp"
 #include <iostream>
 #include <stdlib.h>
 #include <string>
@@ -8,21 +9,34 @@
 #include <assert.h>
 #include <utility>
 #include <algorithm>
+#include <sys/select.h>
 
 char* recvMsg(int fd)
 {
     int len;
-    readn(fd, &len, sizeof(Msg::len_t));
+    if(readn(fd, &len, sizeof(Msg::len_t)) <= 0)
+    {
+        std::cout << "server disconnected" << std::endl;
+        exit(0);
+    }
     len = ntohl(len);
+
+    MsgType type;
+    if(readn(fd, &type, sizeof(Msg::type_t)) <= 0)
+    {
+        std::cout << "server disconnected" << std::endl;
+        exit(0);
+    }
 
     int dataLen = len - sizeof(Msg::type_t);
     if(dataLen == 0) return nullptr;
 
-    MsgType type;
-    readn(fd, &type, sizeof(Msg::type_t));
-
-    char* data = (char*)malloc(dataLen);
-    readn(fd, data, dataLen);
+    char* data = nullptr;
+    if(dataLen > 0)
+    {
+        data = (char*)malloc(dataLen);
+        readn(fd, data, dataLen);
+    }
 
     return data;
 }
@@ -30,8 +44,11 @@ char* recvMsg(int fd)
 void displayStatus(int clientfd)
 {
     char* data = recvMsg(clientfd);
-    std::cout << data << std::endl;
-    free(data);
+    if(data)
+    {
+        std::cout << data << std::endl;
+        free(data);
+    }
 }
 
 void sendCmd(int clientfd, MsgType cmd, int dataLen, const char* data)
@@ -77,13 +94,55 @@ int main(int argc, char **argv)
     if(clientfd < 0)
     { perror("client fd"); exit(1); }
 
+
+    static struct timeval tv;
+    tv.tv_sec = SessionTimeout/2, tv.tv_usec = 0;
+    sendCmd(clientfd, HEARTBEAT, 0, nullptr);
+
+    int serverMissCnt = 0;
+
     std::string cmd;
-    while(true)
+    fd_set readset;
+
+    while(1)
     {
-        std::getline(std::cin, cmd);
-        auto p = parseCmd(cmd);
-        sendCmd(clientfd, p.first, p.second.size() + 1, p.second.c_str());
-        displayStatus(clientfd);
+        int maxfd = clientfd;
+        int inputfd = 0;
+
+        FD_ZERO(&readset);
+        FD_SET(clientfd, &readset);
+        FD_SET(inputfd, &readset);
+
+        int res;
+        if ((res = select(maxfd+1, &readset, NULL, NULL, &tv)) < 0)
+        { perror("select"); return 1; }
+
+        if(res == 0)
+        {
+            if(serverMissCnt++ >= 2)
+            {
+                std::cout << "Server disconnected!\n";
+                exit(0);
+            }
+
+            sendCmd(clientfd, HEARTBEAT, 0, nullptr);
+            tv.tv_sec = SessionTimeout/2, tv.tv_usec = 0;
+        }
+
+        if( FD_ISSET(inputfd, &readset) )
+        {
+            // printf("from input\n");
+            std::getline(std::cin, cmd);
+            auto p = parseCmd(cmd);
+            sendCmd(clientfd, p.first, p.second.size() + 1, p.second.c_str());
+        }
+
+        if( FD_ISSET(clientfd, &readset) )
+        {
+            displayStatus(clientfd);
+            serverMissCnt = 0;
+            // printf("from server\n");
+        }
     }
 
     close(clientfd);

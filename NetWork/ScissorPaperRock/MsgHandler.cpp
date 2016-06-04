@@ -11,6 +11,8 @@
 #include <assert.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <iostream>
 #include <unistd.h>
 
 int requestFifofd;
@@ -25,7 +27,7 @@ static void sigintHandler(int sign_no)
     close(requestFifofd);
     close(responseFifofd);
     for(auto& p : s2u)
-        if(p.second) delete user;
+        if(p.second) delete p.second;
 
     printf("child exit\n");
     exit(0);
@@ -36,13 +38,13 @@ void loginHandler(Session* session, const std::string& username)
     MsgType type = STATUS;
     std::string info = "Login Successfully";
 
-    assert(user == nullptr);
     user = new User;
     user->session = session;
 
     if( !user->login(username) )
     {
         info = user->error_;
+        std::cerr << info << std::endl;
         delete user;
     }
     else s2u[session] = user;
@@ -109,7 +111,10 @@ void openRoundHandler(Session* session, const std::string& roundname)
     if(!user) return;
 
     if( !user->openRound(roundname) )
+    {
         info = user->error_;
+        std::cerr << info << std::endl;
+    }
 
     size_t dataLen = info.size() + 1;
     Msg* msg = wrapMsg(type, dataLen, info.c_str());
@@ -125,7 +130,10 @@ void joinRoundHandler(Session* session, const std::string& roundname)
     if(!user) return;
 
     if( !user->joinRound(roundname) )
+    {
         info = user->error_;
+        std::cerr << info << std::endl;
+    }
 
     size_t dataLen = info.size() + 1;
     Msg* msg = wrapMsg(type, dataLen, info.c_str());
@@ -141,7 +149,10 @@ void quitRoundHandler(Session* session)
     if(!user) return;
 
     if( !user->quitRound() )
+    {
         info = user->error_;
+        std::cerr << info << std::endl;
+    }
 
     size_t dataLen = info.size() + 1;
     Msg* msg = wrapMsg(type, dataLen, info.c_str());
@@ -179,6 +190,15 @@ void roundtimeoutHandler(const std::string& roundname)
     if(!round) return;
 
     round->timeout();
+}
+
+void heartbeatHandler(Session* session)
+{
+    // printf("Heartbeat recvd\n");
+    MsgType type = HEARTBEAT;
+    Msg* msg = wrapMsg(type, 0, nullptr);
+    sendFifoMsg(responseFifofd, session, msg);
+    free(msg);
 }
 
 void unknownMsgHandler(Session* session)
@@ -241,6 +261,9 @@ void msgDispatch()
                 break;
             case ROUNDTIMEOUT:
                 roundtimeoutHandler( std::string(msg->data) );
+                break;
+            case HEARTBEAT:
+                heartbeatHandler(session);
                 break;
 
             default:

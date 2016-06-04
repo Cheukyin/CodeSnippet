@@ -65,6 +65,7 @@ int Session::sendBuf()
 {
     if(writelen <= 0) return 0;
 
+    // printf("sendBuf: %s\n", writebuffer);
     ssize_t res = send(fd, writebuffer, writelen, 0);
     if(res < 0) return errno == EAGAIN ? 1 : -2;
 
