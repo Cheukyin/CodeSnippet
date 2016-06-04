@@ -72,8 +72,9 @@ bool User::joinRound(const std::string& roundname)
     roundname_ = roundname;
     round_ = roundpool_.getRound(roundname);
 
-    std::cout << username_ << " join round "
-              << roundname_ << "\n";
+    if(round_)
+        std::cout << username_ << " join round "
+                  << roundname_ << "\n";
 
     return justJoinRound_();
 }

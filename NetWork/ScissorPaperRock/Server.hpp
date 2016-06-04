@@ -1,12 +1,16 @@
 #ifndef _SCISSORPAPERROCK_SERVER_
 #define _SCISSORPAPERROCK_SERVER_
 
+#include "Timer.hpp"
+
 /* For sockaddr_in */
 #include <netinet/in.h>
 #include <sys/epoll.h>
 #include <map>
+#include <string>
 
 struct Session;
+struct Msg;
 
 class Server
 {
@@ -26,6 +30,10 @@ private:
     int eventCnt;
     struct epoll_event *evlist;
 
+    int timeout;
+    std::map<std::string, TimerPtr> round2timer;
+    TimerQueue timerQ;
+
     int requestFifofd;
     int responseFifofd;
 
@@ -36,7 +44,12 @@ private:
     int do_write(Session* s);
     int do_accecpt(int fd);
     int do_recvResp();
+
     int shutdownSession(Session* s);
+
+    void disableRoundTimer(Msg* msg);
+    void startRoundTimer(Msg* msg);
+    void sendStatus(Session* s, Msg* msg);
 };
 
 #endif // _SCISSORPAPERROCK_SERVER_

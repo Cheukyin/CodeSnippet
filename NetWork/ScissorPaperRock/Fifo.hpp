@@ -16,7 +16,7 @@ struct Msg;
 // };
 
 int makeFifo(const char* fifo_name);
-void sendFifoMsg(int fifofd, Session* session, Msg* msg);
+void sendFifoMsg(int fifofd, const Session* session, const Msg* msg);
 std::pair<Session*, Msg*> recvFifoMsg(int fifofd);
 
 #endif // _SCISSORPAPERROCK_FIFO_

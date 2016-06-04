@@ -21,7 +21,7 @@ int makeFifo(const char* fifo_name)
     return 1;
 }
 
-void sendFifoMsg(int fifofd, Session* session, Msg* msg)
+void sendFifoMsg(int fifofd, const Session* session, const Msg* msg)
 {
     size_t msgLen = sizeof(Msg::len_t) + msg->len;
 

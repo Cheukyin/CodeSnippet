@@ -3,6 +3,8 @@
 #include "Message.hpp"
 #include "Session.hpp"
 #include "Fifo.hpp"
+#include "Timer.hpp"
+#include <iostream>
 
 void Round::joinUser(User* user)
 {
@@ -35,12 +37,53 @@ void Round::registerGesture(UserGesture g)
         default: break;
     }
 
+    if(scissorCnt + paperCnt + rockCnt == 1)
+        startTimer();
+
     judge();
+}
+
+void Round::startTimer()
+{
+    MsgType type = STARTROUNDTIMER;
+    std::string info = roundname_;
+
+    unicast(type, info, nullptr);
+
+    std::cout << "Round " << roundname_
+              << ": timer starts\n";
+}
+
+void Round::disableTimer()
+{
+    MsgType type = DISABLEROUNDTIMER;
+    std::string info = roundname_;
+
+    unicast(type, info, nullptr);
+
+    std::cout << "Round " << roundname_
+              << ": timer disabled\n";
+}
+
+void Round::timeout()
+{
+    extern int responseFifofd;
+
+    MsgType type = STATUS;
+    std::string info = "Round Timeout! Please recast";
+
+    for(User* user : users_)
+        unicast(type, info, user->session);
+
+    scissorCnt = 0, rockCnt = 0, paperCnt = 0;
+
+    std::cout << "Round " << roundname_
+              << ": timeout\n";
 }
 
 bool Round::judge()
 {
-    if(users_.size() == 1) return false;
+    if(users_.size() <= 1) return false;
     if(scissorCnt + paperCnt + rockCnt < users_.size()) return false;
 
     int gestureClassNum = (scissorCnt > 0) + (paperCnt > 0) + (rockCnt > 0);
@@ -74,18 +117,24 @@ bool Round::judge()
     for(User* user : users_)
     {
         info = gesture2result[CastGesture2Int( user->gesture() )];
-
-        extern int responseFifofd;
-
-        size_t dataLen = info.size() + 1;
-        Msg* msg = wrapMsg(type, dataLen, info.c_str());
-        sendFifoMsg(responseFifofd, user->session, msg);
-        free(msg);
+        unicast(type, info, user->session);
     }
 
+    disableTimer();
     scissorCnt = 0, rockCnt = 0, paperCnt = 0;
 
     return true;
+}
+
+void Round::unicast(MsgType type, const std::string& info, const Session* s)
+{
+    extern int responseFifofd;
+
+    size_t dataLen = info.size() + 1;
+    Msg* msg = wrapMsg(type, dataLen, info.c_str());
+    sendFifoMsg(responseFifofd, s, msg);
+
+    free(msg);
 }
 
 
@@ -93,7 +142,7 @@ Round* RoundPool::openRound(const std::string& roundname)
 {
     if(rounds_.find(roundname) != rounds_.end())
         return nullptr;
-    rounds_[roundname] = new Round;
+    rounds_[roundname] = new Round(roundname);
     return rounds_[roundname];
 }
 

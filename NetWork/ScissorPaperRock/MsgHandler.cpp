@@ -58,7 +58,7 @@ void logoutHandler(Session* session)
     MsgType type = STATUS;
     std::string info = "Logout Successfully";
 
-    assert(user != nullptr);
+    if(!user) return;
     user->logout();
 
     size_t dataLen = info.size() + 1;
@@ -69,7 +69,8 @@ void logoutHandler(Session* session)
 
 void shutdownHandler(Session* session)
 {
-    assert(user != nullptr);
+    if(!user) return;
+
     user->logout();
 
     auto it = s2u.find(session);
@@ -85,7 +86,7 @@ void infoHandler(Session* session, const std::string& infotype)
     MsgType type = STATUS;
     std::string info = "Unkown Info Type";
 
-    assert(user != nullptr);
+    if(!user) return;
 
     if(infotype == "username")
         info = user->username();
@@ -105,7 +106,7 @@ void openRoundHandler(Session* session, const std::string& roundname)
     MsgType type = STATUS;
     std::string info = "Open Round Successfully";
 
-    assert(user != nullptr);
+    if(!user) return;
 
     if( !user->openRound(roundname) )
         info = user->error_;
@@ -121,7 +122,7 @@ void joinRoundHandler(Session* session, const std::string& roundname)
     MsgType type = STATUS;
     std::string info = "Join Round Successfully";
 
-    assert(user != nullptr);
+    if(!user) return;
 
     if( !user->joinRound(roundname) )
         info = user->error_;
@@ -137,7 +138,7 @@ void quitRoundHandler(Session* session)
     MsgType type = STATUS;
     std::string info = "Quit Round Successfully";
 
-    assert(user != nullptr);
+    if(!user) return;
 
     if( !user->quitRound() )
         info = user->error_;
@@ -153,7 +154,7 @@ void castHandler(Session* session, const std::string& gesture)
     MsgType type = STATUS;
     std::string info = "Cast Successfully";
 
-    assert(user != nullptr);
+    if(!user) return;
 
     UserGesture gest;
     if(gesture == "scissor") gest = UserGesture::SCISSOR;
@@ -169,6 +170,15 @@ void castHandler(Session* session, const std::string& gesture)
         sendFifoMsg(responseFifofd, session, msg);
         free(msg);
     }
+}
+
+void roundtimeoutHandler(const std::string& roundname)
+{
+    RoundPool& roundpool_( RoundPool::getInstance() );
+    Round* round = roundpool_.getRound(roundname);
+    if(!round) return;
+
+    round->timeout();
 }
 
 void unknownMsgHandler(Session* session)
@@ -228,6 +238,10 @@ void msgDispatch()
                 break;
             case SHUTDOWN:
                 shutdownHandler(session);
+                break;
+            case ROUNDTIMEOUT:
+                roundtimeoutHandler( std::string(msg->data) );
+                break;
 
             default:
                 unknownMsgHandler(session);

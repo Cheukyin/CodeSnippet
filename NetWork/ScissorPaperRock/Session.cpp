@@ -44,7 +44,7 @@ int Session::writeBuf(const char* buf, int bytes)
 {
     if(bytes + writelen > BUFFERSIZE)
     {
-        fprintf(stderr, "write bytes exceeds buffer size");
+        fprintf(stderr, "write bytes exceeds buffer size\n");
         return -2;
     }
 

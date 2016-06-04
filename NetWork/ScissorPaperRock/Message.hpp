@@ -15,7 +15,12 @@ enum MsgType{
     QUITROUND,
     CAST, // -------- client side -------
 
-    SHUTDOWN,
+    SHUTDOWN, // shutdown user without notifying
+
+    // data is roundname
+    STARTROUNDTIMER,
+    DISABLEROUNDTIMER,
+    ROUNDTIMEOUT,
 
     STATUS, // server side
 

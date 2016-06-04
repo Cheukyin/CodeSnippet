@@ -16,9 +16,63 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <functional>
 
 static void make_nonblocking(int fd)
 { fcntl(fd, F_SETFL, O_NONBLOCK); }
+
+void Server::disableRoundTimer(Msg* msg)
+{
+    auto r2t = round2timer.find(msg->data);
+    if(r2t != round2timer.end())
+    {
+        r2t->second->deactive();
+        round2timer.erase(r2t);
+    }
+
+    free(msg);
+}
+
+void Server::startRoundTimer(Msg* msg)
+{
+    int reqFifofd = requestFifofd;
+    std::map<std::string, TimerPtr> *round2timer_ptr(&round2timer);
+
+    msg->type = ROUNDTIMEOUT;
+
+    auto r2t = round2timer.find(msg->data);
+    if(r2t != round2timer.end())
+        r2t->second->deactive();
+
+    TimerPtr timer(new Timer);
+    timer->setPeriod(RoundTimeout);
+    timer->cb = [reqFifofd, msg, round2timer_ptr](){
+
+        auto r2t = round2timer_ptr->find(msg->data);
+        if(r2t != round2timer_ptr->end())
+        {
+            round2timer_ptr->erase(r2t);
+            r2t->second->deactive();
+        }
+
+        sendFifoMsg(reqFifofd, nullptr, msg);
+        free(msg);
+    };
+
+    round2timer[msg->data] = timer;
+    timeout = timerQ.pushTimer(timer);
+    if(timeout > 0) timeout *= 1000;
+}
+
+void Server::sendStatus(Session* s, Msg* msg)
+{
+    size_t msgLen = msg->len + sizeof(Msg::len_t);
+    encodeMsg(msg);
+    s->writeBuf((char*)msg, msgLen);
+
+    free(msg);
+}
+
 
 int Server::do_read(Session* s)
 {
@@ -39,14 +93,17 @@ int Server::do_read(Session* s)
     Msg* msg = (Msg*)malloc(sizeof(Msg::len_t) + msgLen);
     s->drainBuf((char*)msg, sizeof(Msg::len_t) + msgLen);
 
-    // printf("%d\n", msgLen);
+
+    s->timer->deactive();
+    s->timer.reset( new Timer( *(s->timer) ) );
+    s->timer->active();
+    s->timer->setPeriod(SessionTimeout);
+
+    timeout = timerQ.pushTimer(s->timer);
+    if(timeout > 0) timeout *= 1000;
+
 
     decodeMsg(msg);
-
-    // printf("%d, %d, %s\n", msg->len, msg->type, msg->data);
-
-    // msgDispatch(s, msg);
-
     sendFifoMsg(requestFifofd, s, msg);
 
     free(msg);
@@ -60,11 +117,12 @@ int Server::do_recvResp()
     Session* s = p.first;
     Msg* msg = p.second;
 
-    size_t msgLen = msg->len + sizeof(Msg::len_t);
-    encodeMsg(msg);
-    s->writeBuf((char*)msg, msgLen);
-
-    free(msg);
+    if(msg->type == STARTROUNDTIMER)
+        startRoundTimer(msg);
+    else if(msg->type == DISABLEROUNDTIMER)
+        disableRoundTimer(msg);
+    else if(msg->type == STATUS)
+        sendStatus(s, msg);
 
     return 1;
 }
@@ -88,9 +146,19 @@ int Server::do_accecpt(int listener)
     {
         make_nonblocking(fd);
 
+
+        Session* s = new Session(fd, epfd);
+        s->timer.reset(new Timer);
+        s->timer->setPeriod(SessionTimeout);
+        s->timer->cb = std::bind(&Server::shutdownSession, this, s);
+
+        timeout = timerQ.pushTimer(s->timer);
+        if(timeout > 0) timeout *= 1000;
+
+
         struct epoll_event ev;
         ev.events = EPOLLIN;
-        ev.data.ptr = new Session(fd, epfd);
+        ev.data.ptr = s;
 
         if(epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &ev) == -1)
         { perror("epoll_ctl add listener"); }
@@ -159,7 +227,13 @@ void Server::run()
                 sizeof(struct epoll_event) * eventCnt);
         }
 
-        int ready = epoll_wait(epfd, evlist, numOpenFds, -1);
+        int ready = epoll_wait(epfd, evlist, numOpenFds, timeout);
+
+        if(!ready)
+        {
+            timeout = timerQ.updateTimers( time(NULL) );
+            if(timeout > 0) timeout *= 1000;
+        }
 
         for(int i=0; i < ready; i++)
         {
@@ -208,7 +282,8 @@ int Server::shutdownSession(Session* s)
 
 Server::Server(int p)
     : port(p), eventCnt(20),
-      evlist( (struct epoll_event*)malloc(sizeof(struct epoll_event) * eventCnt) )
+      evlist( (struct epoll_event*)malloc(sizeof(struct epoll_event) * eventCnt) ),
+      timeout(-1)
 {
     int res = makeFifo(requestFifoName);
     if(res < 0) throw;

@@ -1,6 +1,8 @@
 #ifndef _SCISSORPAPERROCK_SESSION_
 #define _SCISSORPAPERROCK_SESSION_
 
+#include "Timer.hpp"
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/epoll.h>
@@ -16,6 +18,8 @@ struct Session
     int epfd;
 
     int readlen;
+
+    TimerPtr timer;
 
     Session(int fd): fd(fd)
     {}
