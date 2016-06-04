@@ -33,6 +33,10 @@ public:
     { return username_; }
     int score() const
     { return score_; }
+    void inc_score()
+    { score_++; }
+    void dec_score()
+    { score_--; }
     std::string round() const
     { return roundname_; }
     UserGesture gesture() const

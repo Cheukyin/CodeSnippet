@@ -118,6 +118,9 @@ bool Round::judge()
     {
         info = gesture2result[CastGesture2Int( user->gesture() )];
         unicast(type, info, user->session);
+
+        if(info == "Lose") user->dec_score();
+        else if(info == "Win") user->inc_score();
     }
 
     disableTimer();

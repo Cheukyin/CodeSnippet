@@ -7,6 +7,7 @@
 #include <string.h>
 
 enum MsgType{
+    // --- client to server
     LOGIN,
     LOGOUT,
     INFO,
@@ -14,7 +15,9 @@ enum MsgType{
     JOINROUND,
     QUITROUND,
     HEARTBEAT,
-    CAST, // -------- client side -------
+    CAST,
+
+    // --- inter process
 
     SHUTDOWN, // shutdown user without notifying
 
@@ -23,7 +26,9 @@ enum MsgType{
     DISABLEROUNDTIMER,
     ROUNDTIMEOUT,
 
-    STATUS, // server side
+    // --- server to client
+    STATUS,
+
 
     UNKNOWN
 };

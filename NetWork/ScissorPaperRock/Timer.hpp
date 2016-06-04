@@ -56,17 +56,3 @@ struct TimerQueue
 };
 
 #endif // __SCISSORPAPERROCK_TIMER__
-
-
-
-
-
-
-
-
-
-
-
-
-
-
