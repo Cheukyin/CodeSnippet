@@ -11,6 +11,13 @@ bool User::login(const std::string& username)
         return false;
     }
 
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // TRICK: add this to avoid "floating point exception"
+    if(usernameSet.empty()) usernameSet.reserve(1);
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     if(usernameSet.find(username) != usernameSet.end())
     {
         error_ = "Username Already In Used";
