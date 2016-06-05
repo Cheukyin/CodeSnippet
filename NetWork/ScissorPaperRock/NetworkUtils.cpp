@@ -7,6 +7,9 @@
 #include <sys/types.h>
 #include <strings.h>
 #include <errno.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdio.h>
 
 size_t readn(int fd, const void *buf, size_t n)
 {
@@ -67,4 +70,15 @@ int openClientfd(const char* ip, const int port)
     if(connect(clientfd, (struct sockaddr*)&serveraddr, sizeof(serveraddr)) < 0)
         return -1;
     return clientfd;
+}
+
+void make_nonblocking(int fd)
+{
+    int flags;
+    if((flags = fcntl(fd, F_GETFL, 0)) < 0)
+    { perror("fcntl get flag"); throw; }
+
+    flags |= O_NONBLOCK;
+    if(fcntl(fd, F_SETFL, O_NONBLOCK) < 0)
+    { perror("fcntl set flag"); throw; }
 }

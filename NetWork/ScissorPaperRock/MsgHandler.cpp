@@ -38,14 +38,18 @@ void loginHandler(Session* session, const std::string& username)
     MsgType type = STATUS;
     std::string info = "Login Successfully";
 
-    user = new User;
-    user->session = session;
+    User* olduser = user;
+    if(!user)
+    {
+        user = new User;
+        user->session = session;
+    }
 
     if( !user->login(username) )
     {
         info = user->error_;
         std::cerr << info << std::endl;
-        delete user;
+        if(!olduser) delete user;
     }
     else s2u[session] = user;
 

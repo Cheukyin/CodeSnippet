@@ -2,6 +2,7 @@
 #include "Session.hpp"
 #include "MsgHandler.hpp"
 #include "Fifo.hpp"
+#include "NetworkUtils.hpp"
 
 /* For socket functions */
 #include <sys/socket.h>
@@ -17,9 +18,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <functional>
-
-static void make_nonblocking(int fd)
-{ fcntl(fd, F_SETFL, O_NONBLOCK); }
 
 void Server::disableRoundTimer(Msg* msg)
 {
