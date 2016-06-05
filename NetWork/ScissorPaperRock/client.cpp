@@ -54,7 +54,7 @@ void displayStatus(int clientfd)
 void sendCmd(int clientfd, MsgType cmd, int dataLen, const char* data)
 {
     char *msg = encodeMsg(cmd, dataLen, data);
-    size_t wn = writen(clientfd, msg, dataLen + Msg::HeadLen);
+    writen(clientfd, msg, dataLen + Msg::HeadLen);
     free(msg);
 }
 
