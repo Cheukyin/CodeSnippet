@@ -27,3 +27,19 @@ TEST_CASE(EnableIf)
     struct T;
     CYTL::StaticTypeCheckEQ<CYTL::EnableIf<true, T>, T>();
 }
+
+TEST_CASE(RemoveQualifiers)
+{
+    CYTL::StaticTypeCheckEQ<CYTL::RemoveConst<const volatile int>, volatile int>();
+    CYTL::StaticTypeCheckEQ<CYTL::RemoveConst<int>, int>();
+
+    CYTL::StaticTypeCheckEQ<CYTL::RemoveVolatile<const volatile int>, const int>();
+    CYTL::StaticTypeCheckEQ<CYTL::RemoveVolatile<int&>, int&>();
+
+    CYTL::StaticTypeCheckEQ<CYTL::RemoveConstVolatile<const volatile int>, int>();
+    CYTL::StaticTypeCheckEQ<CYTL::RemoveConstVolatile<int>, int>();
+
+    CYTL::StaticTypeCheckEQ<CYTL::RemoveReference<int&>, int>();
+    CYTL::StaticTypeCheckEQ<CYTL::RemoveReference<int&&>, int>();
+    CYTL::StaticTypeCheckEQ<CYTL::RemoveReference<int>, int>();
+}
