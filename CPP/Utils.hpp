@@ -135,4 +135,11 @@ namespace CYTL
                                && !IsTypeSame<const Parent, const Child>::value;
     };
 
+
+    // ---------------------------------------
+    // NullType
+    struct NullType{};
+    // EmptyType
+    struct EmptyType{};
+
 } // namespace CYTL
