@@ -53,7 +53,7 @@ TEST_CASE(UnderlyingType)
     EXPECT_EQ(CYTL::toUnderlyingType(e), 2);
 
     enum E1{ A=1, B=2, C=3 };
-    CYTL::StaticTypeCheckEQ<CYTL::UnderlyingType<E1>, std::uint32_t>();
+    CYTL::StaticTypeCheckEQ<CYTL::UnderlyingType<E1>, int>();
 
     E1 e1(C);
     EXPECT_EQ(CYTL::toUnderlyingType(e1), 3);
