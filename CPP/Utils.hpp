@@ -10,6 +10,16 @@ namespace CYTL
     template<class T> class TypeDisplayer;
 
 
+    // ----------------------------------------
+    // NonCopyable: just inherit it
+    struct NonCopyable
+    {
+        NonCopyable() {}
+        NonCopyable(const NonCopyable&) = delete;
+        NonCopyable& operator=(const NonCopyable&) = delete;
+    };
+
+
     // ---------------------------------------
     // check if T1 == T2
     template<class T1, class T2> struct StaticTypeCheckEQ;

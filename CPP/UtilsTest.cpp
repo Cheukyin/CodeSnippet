@@ -7,6 +7,16 @@
 //     CYTL::TypeDisplayer<decltype(x)> xType;
 // }
 
+// TEST_CASE(NonCopyable)
+// {
+//     struct T: public CYTL::NonCopyable {};
+
+//     T a;
+//     T b(a); // compiling error
+
+//     T c;
+//     c = a; // compiling error
+// }
 
 TEST_CASE(arraySize)
 {
