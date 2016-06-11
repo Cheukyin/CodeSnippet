@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <type_traits>
 
 namespace CYTL
 {
@@ -49,5 +50,14 @@ namespace CYTL
     template<class T> struct _RemoveReference<T&> { typedef T type; };
     template<class T> struct _RemoveReference<T&&> { typedef T type; };
     template<class T> using RemoveReference = typename _RemoveReference<T>::type;
+
+
+    // underlying type
+    template<class E> using UnderlyingType = typename std::underlying_type<E>::type;
+
+    // Enum Class to UnderType
+    template<class E>
+    constexpr UnderlyingType<E> toUnderlyingType(E e) noexcept
+    { return static_cast< UnderlyingType<E> >(e); }
 
 } // namespace CYTL

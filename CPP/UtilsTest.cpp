@@ -43,3 +43,18 @@ TEST_CASE(RemoveQualifiers)
     CYTL::StaticTypeCheckEQ<CYTL::RemoveReference<int&&>, int>();
     CYTL::StaticTypeCheckEQ<CYTL::RemoveReference<int>, int>();
 }
+
+TEST_CASE(UnderlyingType)
+{
+    enum class E :int{ A=1, B=2, C=3 };
+    CYTL::StaticTypeCheckEQ<CYTL::UnderlyingType<E>, int>();
+
+    E e(E::B);
+    EXPECT_EQ(CYTL::toUnderlyingType(e), 2);
+
+    enum E1{ A=1, B=2, C=3 };
+    CYTL::StaticTypeCheckEQ<CYTL::UnderlyingType<E1>, std::uint32_t>();
+
+    E1 e1(C);
+    EXPECT_EQ(CYTL::toUnderlyingType(e1), 3);
+}
