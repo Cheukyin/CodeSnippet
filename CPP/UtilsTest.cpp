@@ -79,3 +79,26 @@ TEST_CASE(ConstIterator)
     CYTL::StaticTypeCheckEQ<decltype( CYTL::cbegin(arr) ), const int *>();
     CYTL::StaticTypeCheckEQ<decltype( CYTL::cend(arr) ), const int *>();
 }
+
+TEST_CASE(TypeConvertibility)
+{
+    static_assert(CYTL::IsTypeSame<int, int>::value == true, "");
+    static_assert(CYTL::IsTypeSame<double, int>::value == false, "");
+
+    static_assert(CYTL::IsTypeConvertibile<int, int>::value == true, "");
+    static_assert(CYTL::IsTypeConvertibile<double, int>::value == true, "");
+
+    struct P{};
+    struct C: P{};
+
+    static_assert(CYTL::IsTypeConvertibile<P, C>::value == false, "");
+    static_assert(CYTL::IsTypeConvertibile<C, P>::value == true, "");
+
+    static_assert(CYTL::IsSuperClass<C, C>::value == true, "");
+    static_assert(CYTL::IsSuperClass<P, C>::value == true, "");
+    static_assert(CYTL::IsSuperClass<C, P>::value == false, "");
+
+    static_assert(CYTL::IsStrictSuperClass<C, C>::value == false, "");
+    static_assert(CYTL::IsStrictSuperClass<P, C>::value == true, "");
+    static_assert(CYTL::IsStrictSuperClass<C, P>::value == false, "");
+}

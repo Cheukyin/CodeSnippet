@@ -95,4 +95,44 @@ namespace CYTL
     auto cend(const C& container) -> decltype(std::end(container))
     { return std::end(container); }
 
+
+    // ---------------------------------------
+    // check type convertibility
+    template<class T1, class T2>
+    struct IsTypeSame{ static const bool value = false; };
+    template<class T>
+    struct IsTypeSame<T, T>{ static const bool value = true; };
+
+    template<class From, class To>
+    struct IsTypeConvertibile
+    {
+    private:
+        using Small = char;
+        struct Big { char dummy[2]; };
+
+        static Small test(To);
+        static Big test(...);
+        static From makeFrom();
+
+    public:
+        static const bool value = sizeof( test(makeFrom()) ) == sizeof(Small);
+    };
+    template<class T>
+    struct IsTypeConvertibile<T, T>
+    { static const bool value{true}; };
+
+    template<class Parent, class Child>
+    struct IsSuperClass
+    {
+        static const bool value = IsTypeConvertibile<const Child*, const Parent*>::value
+                               && !IsTypeSame<const Parent*, const void*>::value;
+    };
+
+    template<class Parent, class Child>
+    struct IsStrictSuperClass
+    {
+        static const bool value = IsSuperClass<Parent, Child>::value
+                               && !IsTypeSame<const Parent, const Child>::value;
+    };
+
 } // namespace CYTL
