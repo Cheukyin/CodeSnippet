@@ -1,3 +1,4 @@
+#include <iterator>
 #include <cstddef>
 #include <type_traits>
 
@@ -82,5 +83,16 @@ namespace CYTL
     template<class E>
     constexpr UnderlyingType<E> toUnderlyingType(E e) noexcept
     { return static_cast< UnderlyingType<E> >(e); }
+
+
+    // ---------------------------------------
+    // global cbegin, cend
+    template<class C>
+    auto cbegin(const C& container) -> decltype(std::begin(container))
+    { return std::begin(container); }
+
+    template<class C>
+    auto cend(const C& container) -> decltype(std::end(container))
+    { return std::end(container); }
 
 } // namespace CYTL

@@ -68,3 +68,14 @@ TEST_CASE(UnderlyingType)
     E1 e1(C);
     EXPECT_EQ(CYTL::toUnderlyingType(e1), 3);
 }
+
+TEST_CASE(ConstIterator)
+{
+    int arr[] = {1, 2, 3, 4};
+
+    EXPECT_EQ(CYTL::cbegin(arr), arr);
+    EXPECT_EQ(CYTL::cend(arr), arr + CYTL::arraySize(arr));
+
+    CYTL::StaticTypeCheckEQ<decltype( CYTL::cbegin(arr) ), const int *>();
+    CYTL::StaticTypeCheckEQ<decltype( CYTL::cend(arr) ), const int *>();
+}
