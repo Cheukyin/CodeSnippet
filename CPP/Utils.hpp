@@ -1,3 +1,6 @@
+#ifndef __CYTL_UTILS__
+#define __CYTL_UTILS__
+
 #include <iterator>
 #include <cstddef>
 #include <type_traits>
@@ -195,3 +198,5 @@ namespace CYTL
     template<class L, class T> using TypeAppend = typename _TypeAppend<L, T>::type;
 
 } // namespace CYTL
+
+#endif // __CYTL_UTILS__
