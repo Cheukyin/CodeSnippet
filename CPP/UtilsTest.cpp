@@ -112,6 +112,23 @@ TEST_CASE(TypeConvertibility)
     static_assert(CYTL::IsStrictSuperClass<C, P>::value == false, "");
 }
 
+namespace
+{
+    template<class R, class U>
+    R Type2TypeTest(U u, CYTL::Type2Type<R>)
+    { return R(); }
+
+    template<class U>
+    int Type2TypeTest(U u, CYTL::Type2Type<int>)
+    { return 1; }
+}
+TEST_CASE(Type2Type)
+{
+    CYTL::StaticTypeCheckEQ<decltype( Type2TypeTest(2.9, CYTL::Type2Type<char>()) ),
+                            char>();
+    EXPECT_EQ(Type2TypeTest("abc", CYTL::Type2Type<int>()), 1);
+}
+
 TEST_CASE(TypeList)
 {
     using L1 = CYTL::TypeList<>;
@@ -193,22 +210,46 @@ TEST_CASE(TypeOrdering)
 namespace{ template<class T> struct Holder { T value; }; }
 TEST_CASE(GenScatterHierarchy)
 {
-    using Info = CYTL::GenScatterHierarchy<CYTL::TypeList<int, std::string, char>, Holder>;
-
-    // TypeAt
-    CYTL::StaticTypeCheckEQ< CYTL::TypeAt<Info, 0>, Holder<int> >();
-    CYTL::StaticTypeCheckEQ< CYTL::TypeAt<Info, 1>, Holder<std::string> >();
-    CYTL::StaticTypeCheckEQ< CYTL::TypeAt<Info, 2>, Holder<char> >();
-    CYTL::StaticTypeCheckEQ< CYTL::TypeAt<Info, 4>, CYTL::NullType >();
+    using Info = CYTL::GenScatterHierarchy<CYTL::TypeList<int, std::string, int, char, std::string>, Holder>;
 
     Info info;
 
     // Field
     CYTL::Field<0>(info).value = 4;
     CYTL::Field<1>(info).value = "Hi";
-    CYTL::Field<2>(info).value = 'a';
+    CYTL::Field<2>(info).value = 9;
+    CYTL::Field<3>(info).value = 'a';
+    CYTL::Field<4>(info).value = "UI";
 
     EXPECT_EQ(CYTL::Field<0>(info).value, 4);
     EXPECT_EQ(CYTL::Field<1>(info).value, "Hi");
-    EXPECT_EQ(CYTL::Field<2>(info).value, 'a');
+    EXPECT_EQ(CYTL::Field<2>(info).value, 9);
+    EXPECT_EQ(CYTL::Field<3>(info).value, 'a');
+    EXPECT_EQ(CYTL::Field<4>(info).value, "UI");
+
+    CYTL::Field<2>(info).value = 19;
+    EXPECT_EQ(CYTL::Field<2>(info).value, 19);
+}
+
+TEST_CASE(Tuple)
+{
+    CYTL::Tuple<int, char, int, std::string, double, std::string> tuple;
+
+    // Field
+    CYTL::Field<0>(tuple) = 4;
+    CYTL::Field<1>(tuple) = 'a';
+    CYTL::Field<2>(tuple) = 8;
+    CYTL::Field<3>(tuple) = "EMa";
+    CYTL::Field<4>(tuple) = 4.9;
+    CYTL::Field<5>(tuple) = "ABC";
+
+    EXPECT_EQ(CYTL::Field<0>(tuple), 4);
+    EXPECT_EQ(CYTL::Field<1>(tuple), 'a');
+    EXPECT_EQ(CYTL::Field<2>(tuple), 8);
+    EXPECT_EQ(CYTL::Field<3>(tuple), "EMa");
+    EXPECT_EQ(CYTL::Field<4>(tuple), 4.9);
+    EXPECT_EQ(CYTL::Field<5>(tuple), "ABC");
+
+    CYTL::Field<3>(tuple) = "UI";
+    EXPECT_EQ(CYTL::Field<3>(tuple), "UI");
 }

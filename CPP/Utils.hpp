@@ -156,6 +156,11 @@ namespace CYTL
     struct EmptyType{};
 
 
+    // --------------------------------------
+    // Type2Type: for partial specialization of template function
+    template<class T> struct Type2Type {};
+
+
     // ---------------------------------------
     // TypeList
     template<class... T> struct TypeList;
@@ -314,35 +319,56 @@ namespace CYTL
 
     // --------------------------------------
     // GenScatterHierarchy
-    template<class L, template<class> class Holder> struct GenScatterHierarchy;
-    template<template<class> class Holder> struct GenScatterHierarchy<TypeList<>, Holder> {};
-    template<class AtomicType, template<class> class Holder>
+    template<class L, template<class> class Holder, int N=0> struct GenScatterHierarchy;
+    template<template<class> class Holder, int N> struct GenScatterHierarchy<TypeList<>, Holder, N> {};
+    template<class AtomicType, template<class> class Holder, int N>
     struct GenScatterHierarchy: public Holder<AtomicType>
     { using Base = Holder<AtomicType>; };
-    template<class Head, class... Tail, template<class> class Holder>
-    struct GenScatterHierarchy<TypeList<Head, Tail...>, Holder>
-        : public GenScatterHierarchy<Head, Holder>
-        , public GenScatterHierarchy<TypeList<Tail...>, Holder>
+    template<class Head, class... Tail, template<class> class Holder, int N>
+    struct GenScatterHierarchy<TypeList<Head, Tail...>, Holder, N>
+        : public GenScatterHierarchy<Head, Holder, N+1>
+        , public GenScatterHierarchy<TypeList<Tail...>, Holder, N+2>
     {
-        using LeftBase = GenScatterHierarchy<Head, Holder>;
-        using RightBase = GenScatterHierarchy<TypeList<Tail...>, Holder>;
+        using LeftBase = GenScatterHierarchy<Head, Holder, N+1>;
+        using RightBase = GenScatterHierarchy<TypeList<Tail...>, Holder, N+2>;
     };
 
-    // TypeAt
-    template<template<class> class Holder, int N>
-    struct _TypeAt<GenScatterHierarchy<TypeList<>, Holder>, N>
+    // _FieldHelper
+    template<class Hierarchy, int N> struct _FieldHelper;
+    template<template<class> class Holder, int M, int N>
+    struct _FieldHelper<GenScatterHierarchy<TypeList<>, Holder, M>, N>
     { using type = NullType; };
-    template<class Head, class... Tail, template<class> class Holder>
-    struct _TypeAt<GenScatterHierarchy<TypeList<Head, Tail...>, Holder>, 0>
-    { using type = typename GenScatterHierarchy<Head, Holder>::Base; };
-    template<class Head, class... Tail, template<class> class Holder, int N>
-    struct _TypeAt<GenScatterHierarchy<TypeList<Head, Tail...>, Holder>, N>
-    { using type = typename _TypeAt<GenScatterHierarchy<TypeList<Tail...>, Holder>, N-1>::type; };
+    template<class Head, class... Tail, template<class> class Holder, int M>
+    struct _FieldHelper<GenScatterHierarchy<TypeList<Head, Tail...>, Holder, M>, 0>
+    { using type = GenScatterHierarchy<Head, Holder, M+1>; };
+    template<class Head, class... Tail, template<class> class Holder, int M, int N>
+    struct _FieldHelper<GenScatterHierarchy<TypeList<Head, Tail...>, Holder, M>, N>
+    { using type = typename _FieldHelper<GenScatterHierarchy<TypeList<Tail...>, Holder, M+2>, N-1>::type; };
 
     // Field
     template<int N, class Hierarchy>
-    constexpr inline TypeAt<Hierarchy, N>& Field(Hierarchy& obj) noexcept
-    { return static_cast<TypeAt<Hierarchy, N>&>(obj); }
+    constexpr inline typename _FieldHelper<Hierarchy, N>::type::Base&
+    Field(Hierarchy& obj) noexcept
+    {
+        using T = typename _FieldHelper<Hierarchy, N>::type;
+        return static_cast<typename T::Base&>( static_cast<T&>(obj) );
+    }
+
+
+    // ---------------------------------------
+    // Tuple
+    namespace{ template<class T> struct _TupleHolder { using type = T; T _value; }; }
+
+    template<class... T>
+    using Tuple = GenScatterHierarchy<TypeList<T...>, _TupleHolder>;
+
+    template<int N, class... T>
+    constexpr inline typename _FieldHelper<Tuple<T...>, N>::type::Base::type&
+    Field(Tuple<T...>& obj) noexcept
+    {
+        using BT = typename _FieldHelper<Tuple<T...>, N>::type;
+        return static_cast<typename BT::Base&>( static_cast<BT&>(obj) )._value;
+    }
 
 } // namespace CYTL
 
