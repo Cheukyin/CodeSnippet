@@ -1,5 +1,6 @@
 #include "Utils.hpp"
 #include "UnitTest.hpp"
+#include <string>
 
 // TEST_CASE(TypeDisplayer)
 // {
@@ -187,4 +188,27 @@ TEST_CASE(TypeOrdering)
     // TypePartialOrder
     CYTL::StaticTypeCheckEQ<CYTL::TypePartialOrder<ButtonL>, SortedButtonL>();
     CYTL::StaticTypeCheckEQ<CYTL::TypePartialOrder<GUIL>, SortedGUIL>();
+}
+
+namespace{ template<class T> struct Holder { T value; }; }
+TEST_CASE(GenScatterHierarchy)
+{
+    using Info = CYTL::GenScatterHierarchy<CYTL::TypeList<int, std::string, char>, Holder>;
+
+    // TypeAt
+    CYTL::StaticTypeCheckEQ< CYTL::TypeAt<Info, 0>, Holder<int> >();
+    CYTL::StaticTypeCheckEQ< CYTL::TypeAt<Info, 1>, Holder<std::string> >();
+    CYTL::StaticTypeCheckEQ< CYTL::TypeAt<Info, 2>, Holder<char> >();
+    CYTL::StaticTypeCheckEQ< CYTL::TypeAt<Info, 4>, CYTL::NullType >();
+
+    Info info;
+
+    // Field
+    CYTL::Field<0>(info).value = 4;
+    CYTL::Field<1>(info).value = "Hi";
+    CYTL::Field<2>(info).value = 'a';
+
+    EXPECT_EQ(CYTL::Field<0>(info).value, 4);
+    EXPECT_EQ(CYTL::Field<1>(info).value, "Hi");
+    EXPECT_EQ(CYTL::Field<2>(info).value, 'a');
 }

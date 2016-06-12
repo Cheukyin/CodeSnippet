@@ -94,7 +94,7 @@ namespace CYTL
 
     // Enum Class to UnderType
     template<class E>
-    constexpr UnderlyingType<E> toUnderlyingType(E e) noexcept
+    constexpr inline UnderlyingType<E> toUnderlyingType(E e) noexcept
     { return static_cast< UnderlyingType<E> >(e); }
 
 
@@ -305,11 +305,44 @@ namespace CYTL
         using TheMostDerived = MostDerivedType< TypeList<Head, Tail...> >;
         using RemainType = TypeEraseAll<TypeList<Head, Tail...>, TheMostDerived>;
     public:
-        using type = TypeAppend< TypeList<TheMostDerived>, typename _TypePartialOrder<RemainType>::type >;
+        using type = TypeAppend<TypeList<TheMostDerived>, typename _TypePartialOrder<RemainType>::type>;
     };
 
     template<class L>
     using TypePartialOrder = typename _TypePartialOrder<L>::type;
+
+
+    // --------------------------------------
+    // GenScatterHierarchy
+    template<class L, template<class> class Holder> struct GenScatterHierarchy;
+    template<template<class> class Holder> struct GenScatterHierarchy<TypeList<>, Holder> {};
+    template<class AtomicType, template<class> class Holder>
+    struct GenScatterHierarchy: public Holder<AtomicType>
+    { using Base = Holder<AtomicType>; };
+    template<class Head, class... Tail, template<class> class Holder>
+    struct GenScatterHierarchy<TypeList<Head, Tail...>, Holder>
+        : public GenScatterHierarchy<Head, Holder>
+        , public GenScatterHierarchy<TypeList<Tail...>, Holder>
+    {
+        using LeftBase = GenScatterHierarchy<Head, Holder>;
+        using RightBase = GenScatterHierarchy<TypeList<Tail...>, Holder>;
+    };
+
+    // TypeAt
+    template<template<class> class Holder, int N>
+    struct _TypeAt<GenScatterHierarchy<TypeList<>, Holder>, N>
+    { using type = NullType; };
+    template<class Head, class... Tail, template<class> class Holder>
+    struct _TypeAt<GenScatterHierarchy<TypeList<Head, Tail...>, Holder>, 0>
+    { using type = typename GenScatterHierarchy<Head, Holder>::Base; };
+    template<class Head, class... Tail, template<class> class Holder, int N>
+    struct _TypeAt<GenScatterHierarchy<TypeList<Head, Tail...>, Holder>, N>
+    { using type = typename _TypeAt<GenScatterHierarchy<TypeList<Tail...>, Holder>, N-1>::type; };
+
+    // Field
+    template<int N, class Hierarchy>
+    constexpr inline TypeAt<Hierarchy, N>& Field(Hierarchy& obj) noexcept
+    { return static_cast<TypeAt<Hierarchy, N>&>(obj); }
 
 } // namespace CYTL
 
