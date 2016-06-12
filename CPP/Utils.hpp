@@ -216,6 +216,21 @@ namespace CYTL
 
     template<class L, class T> using TypeEraseAll = typename _TypeEraseAll<L, T>::type;
 
+    // TypeEraseDuplicates
+    template<class L> struct _TypeEraseDuplicates;
+    template<> struct _TypeEraseDuplicates< TypeList<> >{ using type = TypeList<>; };
+    template<class Head, class... Tail>
+    struct _TypeEraseDuplicates< TypeList<Head, Tail...> >
+    {
+    private:
+        using EraseAllHead = TypeEraseAll<TypeList<Tail...>, Head>;
+        using TailNoDuplicates = typename _TypeEraseDuplicates<EraseAllHead>::type;
+    public:
+        using type = TypeAppend<TypeList<Head>, TailNoDuplicates>;
+    };
+
+    template<class L> using TypeEraseDuplicates = typename _TypeEraseDuplicates<L>::type;
+
 } // namespace CYTL
 
 #endif // __CYTL_UTILS__
