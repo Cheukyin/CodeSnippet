@@ -142,4 +142,56 @@ namespace CYTL
     // EmptyType
     struct EmptyType{};
 
+
+    // ---------------------------------------
+    // TypeList
+    template<class... T> struct TypeList;
+
+    // TypeLength
+    template<class L> struct TypeLength;
+    template<> struct TypeLength< TypeList<> >{ static const int value = 0; };
+    template<class Head, class... Tail>
+    struct TypeLength< TypeList<Head, Tail...> >
+    { static const int value = 1 + TypeLength< TypeList<Tail...> >::value; };
+
+    // TypeAt
+    template<class L, int N> struct _TypeAt;
+    template<int N> struct _TypeAt<TypeList<>, N>{ using type = NullType; };
+    template<class Head, class... Tail, int N>
+    struct _TypeAt<TypeList<Head, Tail...>, N>
+    { using type = IfThenElse<N==0, Head, typename _TypeAt<TypeList<Tail...>, N-1>::type>; };
+
+    template<class L, int N> using TypeAt = typename _TypeAt<L, N>::type;
+
+    // IndexOf
+    template<class L, class T> struct IndexOf{ static const int value = -1; };
+    template<class... Tail, class T>
+    struct IndexOf<TypeList<T, Tail...>, T>
+    { static const int value = 0; };
+    template<class Head, class... Tail, class T>
+    struct IndexOf<TypeList<Head, Tail...>, T>
+    {
+    private:
+        static const int tmp = IndexOf<TypeList<Tail...>, T>::value;
+    public:
+        static const int value = tmp == -1 ? -1 : 1+tmp;
+    };
+
+    // TypeAppend
+    template<class L1, class L2> struct _TypeAppend;
+
+    template<> struct _TypeAppend<NullType, NullType> { using type = NullType; };
+    template<class... T> struct _TypeAppend< NullType, TypeList<T...> > { using type = TypeList<T...>; };
+    template<class T> struct _TypeAppend<NullType, T> { using type = TypeList<T>; };
+
+    template<class... T> struct _TypeAppend<TypeList<T...>, NullType> { using type = TypeList<T...>; };
+    template<class... Tail, class T>
+    struct _TypeAppend<TypeList<Tail...>, T>
+    { using type = TypeList<Tail..., T>; };
+    template<class... Tail1, class... Tail2>
+    struct _TypeAppend< TypeList<Tail1...>, TypeList<Tail2...> >
+    { using type = TypeList<Tail1..., Tail2...>; };
+
+    template<class L, class T> using TypeAppend = typename _TypeAppend<L, T>::type;
+
 } // namespace CYTL

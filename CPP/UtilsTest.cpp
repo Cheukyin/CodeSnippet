@@ -102,3 +102,35 @@ TEST_CASE(TypeConvertibility)
     static_assert(CYTL::IsStrictSuperClass<P, C>::value == true, "");
     static_assert(CYTL::IsStrictSuperClass<C, P>::value == false, "");
 }
+
+TEST_CASE(TypeList)
+{
+    using L1 = CYTL::TypeList<>;
+    using L2 = CYTL::TypeList<int>;
+    using L3 = CYTL::TypeList<int, char, double>;
+    using L4 = CYTL::TypeList<int, char, double, int>;
+
+    static_assert(CYTL::TypeLength<L1>::value == 0, "");
+    static_assert(CYTL::TypeLength<L2>::value == 1, "");
+    static_assert(CYTL::TypeLength<L3>::value == 3, "");
+
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAt<L1, 5>, CYTL::NullType>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAt<L2, 0>, int>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAt<L3, 2>, double>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAt<L3, 4>, CYTL::NullType>();
+
+    static_assert(CYTL::IndexOf<L1, int>::value == -1, "");
+    static_assert(CYTL::IndexOf<L2, int>::value == 0, "");
+    static_assert(CYTL::IndexOf<L2, char>::value == -1, "");
+    static_assert(CYTL::IndexOf<L3, char>::value == 1, "");
+    static_assert(CYTL::IndexOf<L3, double>::value == 2, "");
+
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<CYTL::NullType, CYTL::NullType>,
+                            CYTL::NullType>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<CYTL::NullType, L1>, L1>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<CYTL::NullType, int>, L2>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, int>, L4>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, CYTL::NullType>, L3>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, L1>, L3>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, L2>, L4>();
+}
