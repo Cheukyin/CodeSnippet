@@ -110,6 +110,7 @@ TEST_CASE(TypeList)
     using L3 = CYTL::TypeList<int, char, double>;
     using L4 = CYTL::TypeList<int, char, double, int>;
     using L5 = CYTL::TypeList<int, char, int, double, int, char, double>;
+    using L6 = CYTL::TypeList<float, char, double, float>;
 
     static_assert(CYTL::TypeLength<L1>::value == 0, "");
     static_assert(CYTL::TypeLength<L2>::value == 1, "");
@@ -142,4 +143,10 @@ TEST_CASE(TypeList)
 
     CYTL::StaticTypeCheckEQ<CYTL::TypeEraseDuplicates<L4>, L3>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeEraseDuplicates<L5>, L3>();
+
+    CYTL::StaticTypeCheckEQ<CYTL::TypeReplace<L1, int, char>, L1>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeReplace<L3, char, float>,
+                            CYTL::TypeList<int, float, double> >();
+
+    CYTL::StaticTypeCheckEQ<CYTL::TypeReplaceAll<L4, int, float>, L6>();
 }

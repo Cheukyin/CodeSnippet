@@ -231,6 +231,30 @@ namespace CYTL
 
     template<class L> using TypeEraseDuplicates = typename _TypeEraseDuplicates<L>::type;
 
+    // TypeReplace
+    template<class L, class T, class U> struct _TypeReplace;
+    template<class T, class U> struct _TypeReplace<TypeList<>, T, U>{ using type = TypeList<>; };
+    template<class T, class... Tail, class U>
+    struct _TypeReplace<TypeList<T, Tail...>, T, U>
+    { using type = TypeList<U, Tail...>; };
+    template<class Head, class... Tail, class T, class U>
+    struct _TypeReplace<TypeList<Head, Tail...>, T, U>
+    { using type = TypeAppend<TypeList<Head>, typename _TypeReplace<TypeList<Tail...>, T, U>::type>; };
+
+    template<class L, class T, class U> using TypeReplace = typename _TypeReplace<L, T, U>::type;
+
+    // TypeReplaceAll
+    template<class L, class T, class U> struct _TypeReplaceAll;
+    template<class T, class U> struct _TypeReplaceAll<TypeList<>, T, U>{ using type = TypeList<>; };
+    template<class T, class... Tail, class U>
+    struct _TypeReplaceAll<TypeList<T, Tail...>, T, U>
+    { using type = TypeAppend<TypeList<U>, typename _TypeReplaceAll<TypeList<Tail...>, T, U>::type>; };
+    template<class Head, class... Tail, class T, class U>
+    struct _TypeReplaceAll<TypeList<Head, Tail...>, T, U>
+    { using type = TypeAppend<TypeList<Head>, typename _TypeReplaceAll<TypeList<Tail...>, T, U>::type>; };
+
+    template<class L, class T, class U> using TypeReplaceAll = typename _TypeReplaceAll<L, T, U>::type;
+
 } // namespace CYTL
 
 #endif // __CYTL_UTILS__
