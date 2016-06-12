@@ -125,12 +125,17 @@ TEST_CASE(TypeList)
     static_assert(CYTL::IndexOf<L3, char>::value == 1, "");
     static_assert(CYTL::IndexOf<L3, double>::value == 2, "");
 
-    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<CYTL::NullType, CYTL::NullType>,
-                            CYTL::NullType>();
-    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<CYTL::NullType, L1>, L1>();
-    CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<CYTL::NullType, int>, L2>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, int>, L4>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, CYTL::NullType>, L3>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, L1>, L3>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, L2>, L4>();
+
+    CYTL::StaticTypeCheckEQ<CYTL::TypeErase<L1, int>, L1>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeErase<L2, int>, L1>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeErase<L2, char>, L2>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypeErase<L3, char>,
+                            CYTL::TypeList<int, double> >();
+
+    CYTL::StaticTypeCheckEQ<CYTL::TypeEraseAll<L4, int>,
+                            CYTL::TypeList<char, double> >();
 }

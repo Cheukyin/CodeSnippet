@@ -182,11 +182,6 @@ namespace CYTL
 
     // TypeAppend
     template<class L1, class L2> struct _TypeAppend;
-
-    template<> struct _TypeAppend<NullType, NullType> { using type = NullType; };
-    template<class... T> struct _TypeAppend< NullType, TypeList<T...> > { using type = TypeList<T...>; };
-    template<class T> struct _TypeAppend<NullType, T> { using type = TypeList<T>; };
-
     template<class... T> struct _TypeAppend<TypeList<T...>, NullType> { using type = TypeList<T...>; };
     template<class... Tail, class T>
     struct _TypeAppend<TypeList<Tail...>, T>
@@ -196,6 +191,30 @@ namespace CYTL
     { using type = TypeList<Tail1..., Tail2...>; };
 
     template<class L, class T> using TypeAppend = typename _TypeAppend<L, T>::type;
+
+    // TypeErase
+    template<class L, class T> struct _TypeErase;
+    template<class T> struct _TypeErase<TypeList<>, T>{ using type = TypeList<>; };
+    template<class T, class... Tail>
+    struct _TypeErase<TypeList<T, Tail...>, T>
+    { using type = TypeList<Tail...>; };
+    template<class Head, class... Tail, class T>
+    struct _TypeErase<TypeList<Head, Tail...>, T>
+    { using type = TypeAppend<TypeList<Head>, typename _TypeErase<TypeList<Tail...>, T>::type>; };
+
+    template<class L, class T> using TypeErase = typename _TypeErase<L, T>::type;
+
+    // TypeEraseAll
+    template<class L, class T> struct _TypeEraseAll;
+    template<class T> struct _TypeEraseAll<TypeList<>, T>{ using type = TypeList<>; };
+    template<class T, class... Tail>
+    struct _TypeEraseAll<TypeList<T, Tail...>, T>
+    { using type = typename _TypeEraseAll<TypeList<Tail...>, T>::type; };
+    template<class Head, class... Tail, class T>
+    struct _TypeEraseAll<TypeList<Head, Tail...>, T>
+    { using type = TypeAppend<TypeList<Head>, typename _TypeEraseAll<TypeList<Tail...>, T>::type>; };
+
+    template<class L, class T> using TypeEraseAll = typename _TypeEraseAll<L, T>::type;
 
 } // namespace CYTL
 
