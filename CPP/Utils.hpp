@@ -272,6 +272,8 @@ namespace CYTL
     template<class L, class T, class U>
     using TypeReplaceAll = typename _TypeReplaceAll<L, T, U>::type;
 
+    // ---------------------------------------
+    // TypeOdering
     // MostDerivedType
     template<class L, class T> struct _MostDerivedTypeHelper;
     template<class T> struct _MostDerivedTypeHelper<TypeList<>, T> { using type = T; };

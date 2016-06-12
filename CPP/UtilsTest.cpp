@@ -166,7 +166,10 @@ TEST_CASE(TypeList)
 
     // TypeReplaceAll
     CYTL::StaticTypeCheckEQ<CYTL::TypeReplaceAll<L4, int, float>, L6>();
+}
 
+TEST_CASE(TypeOrdering)
+{
     struct Widget{};
     struct ScrollBar: Widget{};
     struct Button: Widget{};
