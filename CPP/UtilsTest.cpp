@@ -166,4 +166,22 @@ TEST_CASE(TypeList)
 
     // TypeReplaceAll
     CYTL::StaticTypeCheckEQ<CYTL::TypeReplaceAll<L4, int, float>, L6>();
+
+    struct Widget{};
+    struct ScrollBar: Widget{};
+    struct Button: Widget{};
+    struct GraphicButton: Button{};
+
+    using ButtonL = CYTL::TypeList<Button, Widget, GraphicButton>;
+    using SortedButtonL = CYTL::TypeList<GraphicButton, Button, Widget>;
+
+    using GUIL = CYTL::TypeList<Widget, GraphicButton, ScrollBar, Button>;
+    using SortedGUIL = CYTL::TypeList<GraphicButton, Button, ScrollBar, Widget>;
+
+    // MostDerivedType
+    CYTL::StaticTypeCheckEQ<CYTL::MostDerivedType<ButtonL>, GraphicButton>();
+
+    // TypePartialOrder
+    CYTL::StaticTypeCheckEQ<CYTL::TypePartialOrder<ButtonL>, SortedButtonL>();
+    CYTL::StaticTypeCheckEQ<CYTL::TypePartialOrder<GUIL>, SortedGUIL>();
 }

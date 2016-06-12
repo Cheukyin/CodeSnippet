@@ -41,6 +41,7 @@ namespace CYTL
     template<bool B, class T1, class T2> struct _Select;
     template<class T1, class T2> struct _Select<true, T1, T2> { typedef T1 type; };
     template<class T1, class T2> struct _Select<false, T1, T2> { typedef T2 type; };
+
     template<bool B, class T1, class T2>
     using IfThenElse = typename _Select<B, T1, T2>::type;
 
@@ -49,6 +50,7 @@ namespace CYTL
     // EnableIf
     template<bool B, class T> struct _EnableIf;
     template<class T> struct _EnableIf<true, T> { typedef T type; };
+
     template<bool B, class T>
     using EnableIf = typename _EnableIf<B, T>::type;
 
@@ -57,18 +59,25 @@ namespace CYTL
     // Remove Qualifiers
     template<class T> struct _RemoveConst { typedef T type; };
     template<class T> struct _RemoveConst<const T> { typedef T type; };
-    template<class T> using RemoveConst = typename _RemoveConst<T>::type;
+
+    template<class T>
+    using RemoveConst = typename _RemoveConst<T>::type;
 
     template<class T> struct _RemoveVolatile { typedef T type; };
     template<class T> struct _RemoveVolatile<volatile T> { typedef T type; };
-    template<class T> using RemoveVolatile = typename _RemoveVolatile<T>::type;
 
-    template<class T> using RemoveConstVolatile = RemoveVolatile< RemoveConst<T> >;
+    template<class T>
+    using RemoveVolatile = typename _RemoveVolatile<T>::type;
+
+    template<class T>
+    using RemoveConstVolatile = RemoveVolatile< RemoveConst<T> >;
 
     template<class T> struct _RemoveReference { typedef T type; };
     template<class T> struct _RemoveReference<T&> { typedef T type; };
     template<class T> struct _RemoveReference<T&&> { typedef T type; };
-    template<class T> using RemoveReference = typename _RemoveReference<T>::type;
+
+    template<class T>
+    using RemoveReference = typename _RemoveReference<T>::type;
 
 
     // ---------------------------------------
@@ -80,7 +89,8 @@ namespace CYTL
                                 typename std::make_signed<E>::type,
                                 typename std::make_unsigned<E>::type >;
     };
-    template<class E> using UnderlyingType = typename _UnderlyingType<E>::type;
+    template<class E>
+    using UnderlyingType = typename _UnderlyingType<E>::type;
 
     // Enum Class to UnderType
     template<class E>
@@ -164,7 +174,8 @@ namespace CYTL
     struct _TypeAt<TypeList<Head, Tail...>, N>
     { using type = IfThenElse<N==0, Head, typename _TypeAt<TypeList<Tail...>, N-1>::type>; };
 
-    template<class L, int N> using TypeAt = typename _TypeAt<L, N>::type;
+    template<class L, int N>
+    using TypeAt = typename _TypeAt<L, N>::type;
 
     // IndexOf
     template<class L, class T> struct IndexOf{ static const int value = -1; };
@@ -190,7 +201,8 @@ namespace CYTL
     struct _TypeAppend< TypeList<Tail1...>, TypeList<Tail2...> >
     { using type = TypeList<Tail1..., Tail2...>; };
 
-    template<class L, class T> using TypeAppend = typename _TypeAppend<L, T>::type;
+    template<class L, class T>
+    using TypeAppend = typename _TypeAppend<L, T>::type;
 
     // TypeErase
     template<class L, class T> struct _TypeErase;
@@ -202,7 +214,8 @@ namespace CYTL
     struct _TypeErase<TypeList<Head, Tail...>, T>
     { using type = TypeAppend<TypeList<Head>, typename _TypeErase<TypeList<Tail...>, T>::type>; };
 
-    template<class L, class T> using TypeErase = typename _TypeErase<L, T>::type;
+    template<class L, class T>
+    using TypeErase = typename _TypeErase<L, T>::type;
 
     // TypeEraseAll
     template<class L, class T> struct _TypeEraseAll;
@@ -214,7 +227,8 @@ namespace CYTL
     struct _TypeEraseAll<TypeList<Head, Tail...>, T>
     { using type = TypeAppend<TypeList<Head>, typename _TypeEraseAll<TypeList<Tail...>, T>::type>; };
 
-    template<class L, class T> using TypeEraseAll = typename _TypeEraseAll<L, T>::type;
+    template<class L, class T>
+    using TypeEraseAll = typename _TypeEraseAll<L, T>::type;
 
     // TypeEraseDuplicates
     template<class L> struct _TypeEraseDuplicates;
@@ -229,7 +243,8 @@ namespace CYTL
         using type = TypeAppend<TypeList<Head>, TailNoDuplicates>;
     };
 
-    template<class L> using TypeEraseDuplicates = typename _TypeEraseDuplicates<L>::type;
+    template<class L>
+    using TypeEraseDuplicates = typename _TypeEraseDuplicates<L>::type;
 
     // TypeReplace
     template<class L, class T, class U> struct _TypeReplace;
@@ -241,7 +256,8 @@ namespace CYTL
     struct _TypeReplace<TypeList<Head, Tail...>, T, U>
     { using type = TypeAppend<TypeList<Head>, typename _TypeReplace<TypeList<Tail...>, T, U>::type>; };
 
-    template<class L, class T, class U> using TypeReplace = typename _TypeReplace<L, T, U>::type;
+    template<class L, class T, class U>
+    using TypeReplace = typename _TypeReplace<L, T, U>::type;
 
     // TypeReplaceAll
     template<class L, class T, class U> struct _TypeReplaceAll;
@@ -253,7 +269,45 @@ namespace CYTL
     struct _TypeReplaceAll<TypeList<Head, Tail...>, T, U>
     { using type = TypeAppend<TypeList<Head>, typename _TypeReplaceAll<TypeList<Tail...>, T, U>::type>; };
 
-    template<class L, class T, class U> using TypeReplaceAll = typename _TypeReplaceAll<L, T, U>::type;
+    template<class L, class T, class U>
+    using TypeReplaceAll = typename _TypeReplaceAll<L, T, U>::type;
+
+    // MostDerivedType
+    template<class L, class T> struct _MostDerivedTypeHelper;
+    template<class T> struct _MostDerivedTypeHelper<TypeList<>, T> { using type = T; };
+    template<class Head, class... Tail, class T>
+    struct _MostDerivedTypeHelper<TypeList<Head, Tail...>, T>
+    {
+    private:
+        using Candidate = typename _MostDerivedTypeHelper<TypeList<Tail...>, T>::type;
+    public:
+        using type = IfThenElse<IsSuperClass<Candidate, Head>::value, Head, Candidate>;
+    };
+
+    template<class L> struct _MostDerivedType;
+    template<> struct _MostDerivedType< TypeList<> > { using type = NullType; };
+    template<class Head, class... Tail>
+    struct _MostDerivedType< TypeList<Head, Tail...> >
+    { using type = typename _MostDerivedTypeHelper<TypeList<Head, Tail...>, Head>::type; };
+
+    template<class L>
+    using MostDerivedType = typename _MostDerivedType<L>::type;
+
+    // TypePartialOrder
+    template<class L> struct _TypePartialOrder;
+    template<> struct _TypePartialOrder< TypeList<> > { using type = NullType; };
+    template<class Head, class... Tail>
+    struct _TypePartialOrder< TypeList<Head, Tail...> >
+    {
+    private:
+        using TheMostDerived = MostDerivedType< TypeList<Head, Tail...> >;
+        using RemainType = TypeEraseAll<TypeList<Head, Tail...>, TheMostDerived>;
+    public:
+        using type = TypeAppend< TypeList<TheMostDerived>, typename _TypePartialOrder<RemainType>::type >;
+    };
+
+    template<class L>
+    using TypePartialOrder = typename _TypePartialOrder<L>::type;
 
 } // namespace CYTL
 
