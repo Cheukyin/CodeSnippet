@@ -107,7 +107,7 @@ namespace CYTL
     struct IsTypeSame<T, T>{ static const bool value = true; };
 
     template<class From, class To>
-    struct IsTypeConvertibile
+    struct IsTypeConvertible
     {
     private:
         using Small = char;
@@ -121,13 +121,13 @@ namespace CYTL
         static const bool value = sizeof( test(makeFrom()) ) == sizeof(Small);
     };
     template<class T>
-    struct IsTypeConvertibile<T, T>
+    struct IsTypeConvertible<T, T>
     { static const bool value{true}; };
 
     template<class Parent, class Child>
     struct IsSuperClass
     {
-        static const bool value = IsTypeConvertibile<const Child*, const Parent*>::value
+        static const bool value = IsTypeConvertible<const Child*, const Parent*>::value
                                && !IsTypeSame<const Parent*, const void*>::value;
     };
 

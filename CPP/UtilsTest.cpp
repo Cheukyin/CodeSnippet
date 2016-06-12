@@ -40,15 +40,19 @@ TEST_CASE(EnableIf)
 
 TEST_CASE(RemoveQualifiers)
 {
+    // RemoveConst
     CYTL::StaticTypeCheckEQ<CYTL::RemoveConst<const volatile int>, volatile int>();
     CYTL::StaticTypeCheckEQ<CYTL::RemoveConst<int>, int>();
 
+    // RemoveVolatile
     CYTL::StaticTypeCheckEQ<CYTL::RemoveVolatile<const volatile int>, const int>();
     CYTL::StaticTypeCheckEQ<CYTL::RemoveVolatile<int&>, int&>();
 
+    // RemoveConstVolatile
     CYTL::StaticTypeCheckEQ<CYTL::RemoveConstVolatile<const volatile int>, int>();
     CYTL::StaticTypeCheckEQ<CYTL::RemoveConstVolatile<int>, int>();
 
+    // RemoveReference
     CYTL::StaticTypeCheckEQ<CYTL::RemoveReference<int&>, int>();
     CYTL::StaticTypeCheckEQ<CYTL::RemoveReference<int&&>, int>();
     CYTL::StaticTypeCheckEQ<CYTL::RemoveReference<int>, int>();
@@ -82,22 +86,26 @@ TEST_CASE(ConstIterator)
 
 TEST_CASE(TypeConvertibility)
 {
+    // IsTypeSame
     static_assert(CYTL::IsTypeSame<int, int>::value == true, "");
     static_assert(CYTL::IsTypeSame<double, int>::value == false, "");
 
-    static_assert(CYTL::IsTypeConvertibile<int, int>::value == true, "");
-    static_assert(CYTL::IsTypeConvertibile<double, int>::value == true, "");
+    // IsTypeConvertible
+    static_assert(CYTL::IsTypeConvertible<int, int>::value == true, "");
+    static_assert(CYTL::IsTypeConvertible<double, int>::value == true, "");
 
     struct P{};
     struct C: P{};
 
-    static_assert(CYTL::IsTypeConvertibile<P, C>::value == false, "");
-    static_assert(CYTL::IsTypeConvertibile<C, P>::value == true, "");
+    static_assert(CYTL::IsTypeConvertible<P, C>::value == false, "");
+    static_assert(CYTL::IsTypeConvertible<C, P>::value == true, "");
 
+    // IsSuperClass
     static_assert(CYTL::IsSuperClass<C, C>::value == true, "");
     static_assert(CYTL::IsSuperClass<P, C>::value == true, "");
     static_assert(CYTL::IsSuperClass<C, P>::value == false, "");
 
+    // IsStrictSuperClass
     static_assert(CYTL::IsStrictSuperClass<C, C>::value == false, "");
     static_assert(CYTL::IsStrictSuperClass<P, C>::value == true, "");
     static_assert(CYTL::IsStrictSuperClass<C, P>::value == false, "");
@@ -112,41 +120,50 @@ TEST_CASE(TypeList)
     using L5 = CYTL::TypeList<int, char, int, double, int, char, double>;
     using L6 = CYTL::TypeList<float, char, double, float>;
 
+    // TypeLength
     static_assert(CYTL::TypeLength<L1>::value == 0, "");
     static_assert(CYTL::TypeLength<L2>::value == 1, "");
     static_assert(CYTL::TypeLength<L3>::value == 3, "");
 
+    // TypeAt
     CYTL::StaticTypeCheckEQ<CYTL::TypeAt<L1, 5>, CYTL::NullType>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAt<L2, 0>, int>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAt<L3, 2>, double>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAt<L3, 4>, CYTL::NullType>();
 
+    // IndexOf
     static_assert(CYTL::IndexOf<L1, int>::value == -1, "");
     static_assert(CYTL::IndexOf<L2, int>::value == 0, "");
     static_assert(CYTL::IndexOf<L2, char>::value == -1, "");
     static_assert(CYTL::IndexOf<L3, char>::value == 1, "");
     static_assert(CYTL::IndexOf<L3, double>::value == 2, "");
 
+    // TypeAppend
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, int>, L4>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, CYTL::NullType>, L3>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, L1>, L3>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, L2>, L4>();
 
+    // TypeErase
     CYTL::StaticTypeCheckEQ<CYTL::TypeErase<L1, int>, L1>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeErase<L2, int>, L1>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeErase<L2, char>, L2>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeErase<L3, char>,
                             CYTL::TypeList<int, double> >();
 
+    // TypeEraseAll
     CYTL::StaticTypeCheckEQ<CYTL::TypeEraseAll<L4, int>,
                             CYTL::TypeList<char, double> >();
 
+    // TypeEraseDuplicates
     CYTL::StaticTypeCheckEQ<CYTL::TypeEraseDuplicates<L4>, L3>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeEraseDuplicates<L5>, L3>();
 
+    // TypeReplace
     CYTL::StaticTypeCheckEQ<CYTL::TypeReplace<L1, int, char>, L1>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeReplace<L3, char, float>,
                             CYTL::TypeList<int, float, double> >();
 
+    // TypeReplaceAll
     CYTL::StaticTypeCheckEQ<CYTL::TypeReplaceAll<L4, int, float>, L6>();
 }
