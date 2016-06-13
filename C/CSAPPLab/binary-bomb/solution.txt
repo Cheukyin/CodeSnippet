@@ -1,0 +1,586 @@
+IA32-Version:
+objdump -d bomb_32 > bomb_assembly_32.S
+
+Phase 1:
+    打开bomb_assembly_32.S,定位到<phase_1>函数,可以看到以下代码:
+      
+    8048b26:	8b 45 08             	mov    0x8(%ebp),%eax
+    8048b29:	83 c4 f8             	add    $0xfffffff8,%esp
+    8048b2c:	68 c0 97 04 08       	push   $0x80497c0
+    8048b31:	50                   	push   %eax
+    8048b32:	e8 f9 04 00 00       	call   8049030 <strings_not_equal>
+    8048b37:	83 c4 10             	add    $0x10,%esp
+    8048b3a:	85 c0                	test   %eax,%eax
+    8048b3c:	74 05                	je     8048b43 <phase_1+0x23>
+    8048b3e:	e8 b9 09 00 00       	call   80494fc <explode_bomb>
+
+    可以看出,用户输入字串指针保存在0x8(%ebp), <phase_1>把此指针放入eax,
+    然后把$0x80497c0压栈,再把eax也就是用户字串指针压栈,
+    然后调用<strings_not_equal>
+    待<strings_not_equal>返回后,测试返回值,
+    若equal则进入下一phase,否则<explode_bomb>
+
+    从<strings_not_equal>可知该函数用于比较两函数的值,因此需要两个字串作为输入,
+    上面代码中,push %eax用于传递用户字串指针,
+    则push $0x80497c0自然是传递比较字串的指针了.
+
+    打开gdb,x/s 0x80497c0, 可以直接查看到该指针指向的子符串:
+    Public speaking is very easy.
+
+
+Phase 2:
+    打开bomb_assembly_32.S,定位到<phase_2>函数,留意以下几行:
+
+    8048b50:	8b 55 08             	mov    0x8(%ebp),%edx
+    8048b53:	83 c4 f8             	add    $0xfffffff8,%esp
+    8048b56:	8d 45 e8             	lea    -0x18(%ebp),%eax
+    8048b59:	50                   	push   %eax
+    8048b5a:	52                   	push   %edx
+    8048b5b:	e8 78 04 00 00       	call   8048fd8 <read_six_numbers>
+
+    mov 0x8(%ebp),%edx 将用户字串指针存入edx,
+    lea -0x18(%ebp),%eax 把ebp-0x18这个地址存入eax,
+    则最后三句
+    push %eax
+    push %edx
+    call 8048fd8 <read_six_numbers>
+    相当于read_six_numbers( 用户字串指针地址, ebp-0x18 )
+
+    现在我们切换到<read_six_numbers>,看看这个函数是干什么的:
+    先来看下面2行:
+    8048fde:	8b 4d 08             	mov    0x8(%ebp),%ecx
+    8048fe1:	8b 55 0c             	mov    0xc(%ebp),%edx
+    把用户字串指针存入ecx, ebp-0x18存入edx
+    往下看:
+    8048fe4:	8d 42 14             	lea    0x14(%edx),%eax
+    eax存入了 edx+0x14 这个值
+    再往下:
+    8048fe7:	50                   	push   %eax
+    8048fe8:	8d 42 10             	lea    0x10(%edx),%eax
+    8048feb:	50                   	push   %eax
+    8048fec:	8d 42 0c             	lea    0xc(%edx),%eax
+    8048fef:	50                   	push   %eax
+    8048ff0:	8d 42 08             	lea    0x8(%edx),%eax
+    8048ff3:	50                   	push   %eax
+    8048ff4:	8d 42 04             	lea    0x4(%edx),%eax
+    8048ff7:	50                   	push   %eax
+    8048ff8:	52                   	push   %edx
+    上面几行依次把 edx+0x14, edx+0x10, edx+0xc, edx+0x8, edx+4, edx 这6个地址值压栈
+    注意edx是<phase_2>的stack frame的 ebp-0x18 这个地址值
+    8048ff9:	68 1b 9b 04 08       	push   $0x8049b1b
+    8048ffe:	51                   	push   %ecx
+    8048fff:	e8 5c f8 ff ff       	call   8048860 <sscanf@plt>
+    前2行把 $0x8049b1b 和 ecx(用户字串指针) 压栈, 然后调用sscanf
+    sscanf的原型是int sscanf(const char *str, const char *format, ...);
+    按format的格式解释str,然后把得到的值放入后面省略号所代表的变量中
+    因此, 按刚才压栈的顺序, str是用户输入字串, $0x8049b1b 是format的地址,
+    edx, edx+4,...,edx+0x14是对应的变量.
+    先用gdb查看format, x/s $0x8049b1b, "%d %d %d %d %d %d".
+    可知,需要从用户字串中提取6个整数,存入(edx)--(edx+0x14)中.
+
+    综上, <read_six_numbers> 作用就是从用户字串中提取6个数字, 存入<phase_2>stack frame中的(ebp-0x18)中
+
+    回到<phase_2>接着看:
+    8048b63:	83 7d e8 01          	cmpl   $0x1,-0x18(%ebp)
+    8048b67:	74 05                	je     8048b6e <phase_2+0x26>
+    8048b69:	e8 8e 09 00 00       	call   80494fc <explode_bomb>
+    测试(ebp-0x18)是否等于1, 不等则bomb, 因此用户输入的第一个数字应为1.
+
+    8048b6e:	bb 01 00 00 00       	mov    $0x1,%ebx
+    8048b73:	8d 75 e8             	lea    -0x18(%ebp),%esi
+    令ebx=1, esi = ebp-18
+
+    8048b76:	8d 43 01             	lea    0x1(%ebx),%eax
+    8048b79:	0f af 44 9e fc       	imul   -0x4(%esi,%ebx,4),%eax
+    8048b7e:	39 04 9e             	cmp    %eax,(%esi,%ebx,4)
+    8048b81:	74 05                	je     8048b88 <phase_2+0x40>
+    8048b83:	e8 74 09 00 00       	call   80494fc <explode_bomb>
+    8048b88:	43                   	inc    %ebx
+    8048b89:	83 fb 05             	cmp    $0x5,%ebx
+    8048b8c:	7e e8                	jle    8048b76 <phase_2+0x2e>
+    注意, esi是存放6个数字中第1数字的地址,
+    因此 -0x4(%esi,%ebx,4) 表示第ebx个数字,
+    (%esi,ebx,4)表示第ebx+1个数字
+    因此上面第3-6行代码检查 a[ebx]*(ebx+1) == a[ebx+1], 其中a[n]表示第n个数字
+    若不等则bomb,否则ebx增1并循环
+
+    因此<phase_2>需要输入一个数列, a[1]=1, a[n+1] = a[n]*(n+1), n<=6
+    1, 2, 6, 24, 120, 720
+
+
+Phase 3:
+    打开bomb_assembly_32.S,定位到<phase_3>函数,可以看到以下代码:
+
+    ;; edx stores pointer of user input
+    8048b9f:	8b 55 08             	mov    0x8(%ebp),%edx
+    8048ba2:	83 c4 f4             	add    $0xfffffff4,%esp
+    ;; push ebp-4 onto stack
+    8048ba5:	8d 45 fc             	lea    -0x4(%ebp),%eax
+    8048ba8:	50                   	push   %eax
+    ;; push ebp-5 onto stack
+    8048ba9:	8d 45 fb             	lea    -0x5(%ebp),%eax
+    8048bac:	50                   	push   %eax
+    ;; push ebp-12 onto stack
+    8048bad:	8d 45 f4             	lea    -0xc(%ebp),%eax
+    8048bb0:	50                   	push   %eax
+    ;; push $0x80497de onto stack
+    ;; gdb x/s 0x80497de: "%d %c %d"
+    8048bb1:	68 de 97 04 08       	push   $0x80497de
+    ;; push pointer of user input onto stack
+    8048bb6:	52                   	push   %edx
+    8048bb7:	e8 a4 fc ff ff       	call   8048860 <sscanf@plt>
+
+    具体代码请看注释,一开始主要是sscanf(用户字串指针, "%d %c %d", ebp-12, ebp-5, ebp-4)
+
+    继续看下去:
+
+    ;; (ebp-12) stores the first int, compare to 7
+    ;; cmpl takes (ebp-12) as unsigned int
+    8048bc9:	83 7d f4 07          	cmpl   $0x7,-0xc(%ebp)
+    ;; (unsigned)(ebp-12) > 7, jump to 0x8048c88, which will bomb
+    8048bcd:	0f 87 b5 00 00 00    	ja     8048c88 <phase_3+0xf0>
+    ;; jump to *( 0x80497e8 + 4*(the first int) )
+    8048bd3:	8b 45 f4             	mov    -0xc(%ebp),%eax
+    8048bd6:	ff 24 85 e8 97 04 08 	jmp    *0x80497e8(,%eax,4)
+
+    关键在于最后的跳转,根据输入的第一个整数确定跳转地址,
+    地址存储在(0x80497e8 + 4*(the first int)).
+    容易联想到(0x80497e8)存储着一个跳转表,用gdb查看之,x/10wx 0x80497e8:
+
+    0x80497e8:	0x08048be0	0x08048c00	0x08048c16	0x08048c28
+    0x80497f8:	0x08048c40	0x08048c52	0x08048c64	0x08048c76
+    0x8049808:	0x67006425	0x746e6169
+
+    可以看到表中有很多个地址,先来看第一个地址指向的语句(对应的输入整数为0):
+
+    ;; bl = 0x71
+    8048be0:	b3 71                	mov    $0x71,%bl
+    ;; if 0x309==777==the last int,
+    ;; jump to 0x8048c8f, which will compare the char
+    8048be2:	81 7d fc 09 03 00 00 	cmpl   $0x309,-0x4(%ebp)
+    8048be9:	0f 84 a0 00 00 00    	je     8048c8f <phase_3+0xf7>
+    8048bef:	e8 08 09 00 00       	call   80494fc <explode_bomb>
+
+    可以看出,先把0x71存入bl,
+    然后若输入的最后一个整数==777的话,则跳转到0x8048c8f
+
+    ;; after compare the last int, jump here
+    ;; bl = 0x71 = 'q', compare to the char
+    ;; if ==, jump to 0x8048c99, and leave this function
+    8048c8f:	3a 5d fb             	cmp    -0x5(%ebp),%bl
+    8048c92:	74 05                	je     8048c99 <phase_3+0x101>
+    8048c94:	e8 63 08 00 00       	call   80494fc <explode_bomb>
+
+    比较输入的字符是否等于'q',若等于则defuse成功
+
+    因此,输入应为: "0 q 777"
+
+    当然此题应该有不止一个答案,选择跳转表中不同的地址会导致不同的输入.
+
+
+Phase 4:
+    打开bomb_assembly_32.S,定位到<phase_4>函数,可以看到以下代码:
+
+    ;; edx = pointer of input string
+    8048ce6:	8b 55 08             	mov    0x8(%ebp),%edx
+    8048ce9:	83 c4 fc             	add    $0xfffffffc,%esp
+    ;; eax = ebp-4
+    8048cec:	8d 45 fc             	lea    -0x4(%ebp),%eax
+    ;; push ebp-4
+    8048cef:	50                   	push   %eax
+    ;; push $0x8049808
+    ;; x/s 0x804980: "%d"
+    8048cf0:	68 08 98 04 08       	push   $0x8049808
+    ;; push pointer of input string
+    8048cf5:	52                   	push   %edx
+    8048cf6:	e8 65 fb ff ff       	call   8048860 <sscanf@plt>
+
+    就是读入一个整数,存入ebp-4
+
+    ;; func4( input_number )
+    8048d11:	8b 45 fc             	mov    -0x4(%ebp),%eax
+    8048d14:	50                   	push   %eax
+    8048d15:	e8 86 ff ff ff       	call   8048ca0 <func4>
+
+    8048d1a:	83 c4 10             	add    $0x10,%esp
+    ;; eax should contain the return value of <func4>
+    ;; if eax == 0x37 == 55, defused
+    8048d1d:	83 f8 37             	cmp    $0x37,%eax
+    8048d20:	74 05                	je     8048d27 <phase_4+0x47>
+    8048d22:	e8 d5 07 00 00       	call   80494fc <explode_bomb>
+
+    然后比较 func4( input_number )==55, 若等于则成功defuse.
+
+    接下来看看<func4>:
+    
+    ;; ebx = input_number
+    8048ca8:	8b 5d 08             	mov    0x8(%ebp),%ebx
+    ;; if input_number<=1, <func4> return 1
+    8048cab:	83 fb 01             	cmp    $0x1,%ebx
+    8048cae:	7e 20                	jle    8048cd0 <func4+0x30>
+
+    8048cb0:	83 c4 f4             	add    $0xfffffff4,%esp
+    ;; esi == func4( input_number-1 )
+    8048cb3:	8d 43 ff             	lea    -0x1(%ebx),%eax
+    8048cb6:	50                   	push   %eax
+    8048cb7:	e8 e4 ff ff ff       	call   8048ca0 <func4>
+    8048cbc:	89 c6                	mov    %eax,%esi
+
+    8048cbe:	83 c4 f4             	add    $0xfffffff4,%esp
+
+    ;; esi += func4( input_number-2 )
+    8048cc1:	8d 43 fe             	lea    -0x2(%ebx),%eax
+    8048cc4:	50                   	push   %eax
+    8048cc5:	e8 d6 ff ff ff       	call   8048ca0 <func4>
+    8048cca:	01 f0                	add    %esi,%eax
+
+    很明显是Fibonacci数列,  func4(n) = func4(n-1) + func4(n-2)
+    注意f(0)=f(1)=1, 通过简单计算知f(9)=55
+
+    因此输入应为55
+
+
+Phase 5:
+    打开bomb_assembly_32.S,定位到<phase_5>函数,可以看到以下代码:
+
+    ;; ebx = pointer of input
+    ;; push ebx onto stack
+    ;; call string_length
+    8048d34:	8b 5d 08             	mov    0x8(%ebp),%ebx
+    8048d37:	83 c4 f4             	add    $0xfffffff4,%esp
+    8048d3a:	53                   	push   %ebx
+    8048d3b:	e8 d8 02 00 00       	call   8049018 <string_length>
+
+    8048d40:	83 c4 10             	add    $0x10,%esp
+    ;; eax stores the return value of string_length
+    ;; if eax == 6, jump to 0x8048d4d 
+    8048d43:	83 f8 06             	cmp    $0x6,%eax
+    8048d46:	74 05                	je     8048d4d <phase_5+0x21>
+    8048d48:	e8 af 07 00 00       	call   80494fc <explode_bomb>
+
+    从上面代码可知,输入需要6个字符.
+
+    ;; edx = 0
+    8048d4d:	31 d2                	xor    %edx,%edx
+    ;; ecx = ebp-8
+    8048d4f:	8d 4d f8             	lea    -0x8(%ebp),%ecx
+    ;; esi = 0x804b220
+    8048d52:	be 20 b2 04 08       	mov    $0x804b220,%esi
+    ;; edx is a counter from 0 to 5
+    ;; al = (edx + ebx), then al reads a char each time
+    8048d57:	8a 04 1a             	mov    (%edx,%ebx,1),%al
+    ;; extract the low 4 bit of al
+    8048d5a:	24 0f                	and    $0xf,%al
+    ;; sign-extend al to eax
+    8048d5c:	0f be c0             	movsbl %al,%eax
+    ;; al = ( eax + 0x804b220 )
+    ;; x/16c 0x804b220:
+    ;; 0x804b220:	105 'i'	115 's'	114 'r'	118 'v'	101 'e'	97 'a'	119 'w'	104 'h'
+    ;; 0x804b228:	111 'o'	98 'b'	112 'p'	110 'n'	117 'u'	116 't'	102 'f'	103 'g'
+    8048d5f:	8a 04 30             	mov    (%eax,%esi,1),%al
+    ;; edx + ecx = al,
+    ;; notice that, ecx = ebp-8
+    ;; and edx is a counter from 0 to 5
+    8048d62:	88 04 0a             	mov    %al,(%edx,%ecx,1)
+    8048d65:	42                   	inc    %edx
+    ;; loop
+    8048d66:	83 fa 05             	cmp    $0x5,%edx
+    8048d69:	7e ec                	jle    8048d57 <phase_5+0x2b>
+
+    ;; ebp-2 = 0, a terminal of string started from ebp-8
+    8048d6b:	c6 45 fe 00          	movb   $0x0,-0x2(%ebp)
+    8048d6f:	83 c4 f8             	add    $0xfffffff8,%esp
+    
+    上面代码的作用是循环读取6个输入字符中的每一字符input[k],
+    提取input[k]的低四位,把这四位构成的整数index当作索引,
+    查找0x804b220开始16个字节中存储的字符.
+    用gdb查看, x/16c 0x804b220:
+    0x804b220:	105 'i'	115 's'	114 'r'	118 'v'	101 'e'	97 'a'	119 'w'	104 'h'
+    0x804b228:	111 'o'	98 'b'	112 'p'	110 'n'	117 'u'	116 't'	102 'f'	103 'g'
+    获取0x804b220[ input[k] & 0xf ]后,将之copy至 (ebp-8)[k]
+
+    继续看:
+
+    ;; x/s 0x804980b: "giants"
+    ;; push "giants"
+    8048d72:	68 0b 98 04 08       	push   $0x804980b
+    ;; push ebp-8
+    8048d77:	8d 45 f8             	lea    -0x8(%ebp),%eax
+    8048d7a:	50                   	push   %eax
+    ;; compare "giants" and the string started from ebp-8
+    8048d7b:	e8 b0 02 00 00       	call   8049030 <strings_not_equal>
+    8048d80:	83 c4 10             	add    $0x10,%esp
+    8048d83:	85 c0                	test   %eax,%eax
+    ;; if two strings equal to each other, defused
+    8048d85:	74 05                	je     8048d8c <phase_5+0x60>
+    8048d87:	e8 70 07 00 00       	call   80494fc <explode_bomb>
+
+    上面代码便是将ebp-18开始的字串和"giants"比较,若相等,则defused.
+    注意到 (ebp-18)[k] = 0x804b220[ input[k] & 0xf ]
+    0x804b220:	105 'i'	115 's'	114 'r'	118 'v'	101 'e'	97 'a'	119 'w'	104 'h'
+    0x804b228:	111 'o'	98 'b'	112 'p'	110 'n'	117 'u'	116 't'	102 'f'	103 'g'
+    因此,
+    input[0]&0xf = 0xf, input[1]&0xf = 0x0,
+    input[2]&0xf = 0x5, input[3]&0xf = 0xb,
+    input[4]&0xf = 0xd, input[5]&0xf = 0x1,
+
+    只要输入的各个字符的低四位符合上面就好,我个人选取了"opekma"
+    
+
+Phase 6:
+    写得太复杂了,各种内外循环,各种跳转,看得头晕,日后有闲再看.
+    现在先把能看懂的部份写出来:
+
+    ;; edx = pointer of input
+    8048da1:	8b 55 08             	mov    0x8(%ebp),%edx
+    ;; (ebp-0x34) = $0x804b26c
+    8048da4:	c7 45 cc 6c b2 04 08 	movl   $0x804b26c,-0x34(%ebp)
+    8048dab:	83 c4 f8             	add    $0xfffffff8,%esp
+    ;; read six numbers from input,
+    ;; and storse in the area started from ebp-18
+    8048dae:	8d 45 e8             	lea    -0x18(%ebp),%eax
+    8048db1:	50                   	push   %eax
+    8048db2:	52                   	push   %edx
+    8048db3:	e8 20 02 00 00       	call   8048fd8 <read_six_numbers>
+
+    上面代码就是从输入读入6个整数,存入ebp-0x18,
+
+    初步怀疑0x804b26c地址存放着一个链表.
+
+    ;; edi = 0
+    8048db8:	31 ff                	xor    %edi,%edi
+    8048dba:	83 c4 10             	add    $0x10,%esp
+    8048dbd:	8d 76 00             	lea    0x0(%esi),%esi
+    ;; eax = (ebp-0x18 + 4*edi) = six-number[edi]
+    ;; ebp-0x18 = the beginning address of the six numbers
+    ;; edi is a counter from 0 to 5
+    8048dc0:	8d 45 e8             	lea    -0x18(%ebp),%eax
+    8048dc3:	8b 04 b8             	mov    (%eax,%edi,4),%eax
+    ;; eax = six-number[edi]-1
+    8048dc6:	48                   	dec    %eax
+    ;; if eax <= 5 , continue
+    8048dc7:	83 f8 05             	cmp    $0x5,%eax
+    8048dca:	76 05                	jbe    8048dd1 <phase_6+0x39>
+    8048dcc:	e8 2b 07 00 00       	call   80494fc <explode_bomb>
+
+    ;; if edi+1 > 5, finish edi loop
+    8048dd1:	8d 5f 01             	lea    0x1(%edi),%ebx
+    8048dd4:	83 fb 05             	cmp    $0x5,%ebx
+    8048dd7:	7f 23                	jg     8048dfc <phase_6+0x64>
+
+    ;; (ebp-0x38) = edi*4
+    8048dd9:	8d 04 bd 00 00 00 00 	lea    0x0(,%edi,4),%eax
+    8048de0:	89 45 c8             	mov    %eax,-0x38(%ebp)
+
+    ;; esi = ebp-18 = the beginning address of the six numbers
+    8048de3:	8d 75 e8             	lea    -0x18(%ebp),%esi
+    ;; edx = (ebp-0x38) = edi*4
+    ;; inner loops,
+    ;; ebx is the counter from edi+1 to 5
+    8048de6:	8b 55 c8             	mov    -0x38(%ebp),%edx
+    ;; eax = edx + esi = six-number[edi]
+    8048de9:	8b 04 32             	mov    (%edx,%esi,1),%eax
+    ;; compare six-number[edi] and six-number[edi+ebx]
+    8048dec:	3b 04 9e             	cmp    (%esi,%ebx,4),%eax
+    ;; if six-number[edi] != six-number[edi+1], continue
+    8048def:	75 05                	jne    8048df6 <phase_6+0x5e>
+    8048df1:	e8 06 07 00 00       	call   80494fc <explode_bomb>
+    ;; ebx++
+    ;; if ebx<=5, jump to 0x8048de6, ebx loops
+    ;; else , finish ebx loop
+    8048df6:	43                   	inc    %ebx
+    8048df7:	83 fb 05             	cmp    $0x5,%ebx
+    8048dfa:	7e ea                	jle    8048de6 <phase_6+0x4e>
+
+    内外两层循环,外层用edi计数,确保输入的6个整数不大于6,
+    内层用ebx计数,保证所有数字两两不相等.
+
+    再往后的代码异常混乱,各种链表离历,没空看....
+
+    先从网上获得答案：4 2 6 3 1 5
+
+
+Secret Phase:
+    首先要找到<secret_phase>的入口,经搜索发现入口是在<phase_defused>里面.
+    先来看看<phase_defused>:
+
+    ;; every time call read_line, ( 0x804b480 )++
+    ;; only with 6 correct answer given ,will the secret phase appear
+    8049533:	83 3d 80 b4 04 08 06 	cmpl   $0x6,0x804b480
+    804953a:	75 63                	jne    804959f <phase_defused+0x73>
+
+    (0x804b480)是一个计数器,每当调用一次<read_line>每自增1,因此只有6关全通才能打开隐藏关卡.
+
+    ;; push ebp-0x50
+    804953c:	8d 5d b0             	lea    -0x50(%ebp),%ebx
+    804953f:	53                   	push   %ebx
+    ;; push ebp-0x54
+    8049540:	8d 45 ac             	lea    -0x54(%ebp),%eax
+    8049543:	50                   	push   %eax
+    ;; (gdb) x/s 0x8049d03
+    ;; 0x8049d03:	"%d %s"
+    8049544:	68 03 9d 04 08       	push   $0x8049d03
+    ;; push the string stores in 0x804b770
+    ;; the address of input of phase 4
+    8049549:	68 70 b7 04 08       	push   $0x804b770
+    804954e:	e8 0d f3 ff ff       	call   8048860 <sscanf@plt>
+
+    ....
+    
+    ;; (gdb) x/s 0x8049d09
+    ;; 0x8049d09:	"austinpowers"
+    804955e:	68 09 9d 04 08       	push   $0x8049d09
+    ;; push the %s
+    8049563:	53                   	push   %ebx
+    8049564:	e8 c7 fa ff ff       	call   8049030 <strings_not_equal>
+
+    省略号上方的代码调用sscanf( (char *)0x804b770, "%d %s", (int *)(ebp-0x54), (char *)ebp-0x50 )
+    即从0x804b770读入一个整数和字串.
+    再看省略号下方的代码,比较读入的字串和"austinpowers", 若相等,则打开<secret_phase>
+
+    好了,现在问题是,如何把一个整数和"austinpowers"写入地址0x804b770?
+    回想前几关,写入字串都是通过read_line,所以猜想可能是在某一关的输入中多输入些内容以写入地址0x804b770.
+    用gdb查看前几关输入字串的指针,发现第4关的输入刚好是在地址0x804b770,而Phase 4只需输入一个数字,因此只需
+    在第4关的输入中多输入一个"austinpowers"即可进入<secret_phase>.
+
+    现在看看<secret_phase>:
+
+    8048eef:	e8 08 03 00 00       	call   80491fc <read_line>
+
+    8048ef4:	6a 00                	push   $0x0
+
+    ;; strtol( user input string, 0, 10)
+    ;; long int strtol(const char *nptr, char **endptr, int base);
+    ;; converts the initial part of the string in nptr to a long integer value according to the given base
+    8048ef6:	6a 0a                	push   $0xa
+    8048ef8:	6a 00                	push   $0x0
+    8048efa:	50                   	push   %eax
+    8048efb:	e8 f0 f8 ff ff       	call   80487f0 <__strtol_internal@plt>
+
+    首先,读入一个字串,并用strtol将之转换为long int.
+
+    ;; if fun7( 0x804b320, the input long int )
+    ;; x/d 0x804b320: (0x804b320) = 36
+    8048f17:	53                   	push   %ebx
+    8048f18:	68 20 b3 04 08       	push   $0x804b320
+    8048f1d:	e8 72 ff ff ff       	call   8048e94 <fun7>
+
+    8048f22:	83 c4 10             	add    $0x10,%esp
+    ;; if fun7(0x804b320, the input long int) == 7, defused
+    8048f25:	83 f8 07             	cmp    $0x7,%eax
+    8048f28:	74 05                	je     8048f2f <secret_phase+0x47>
+    8048f2a:	e8 cd 05 00 00       	call   80494fc <explode_bomb>
+
+    代码很简单,调用fun7( (void *)0x804b320, 输入的整数 ),若返回值==7, 则成功defused.
+
+    现在看看<fun7>:
+    
+    ;; edx = the first parameter, an address
+    8048e9a:	8b 55 08             	mov    0x8(%ebp),%edx
+    ;; eax = the input long int
+    8048e9d:	8b 45 0c             	mov    0xc(%ebp),%eax
+
+    ;; if edx != 0
+    8048ea0:	85 d2                	test   %edx,%edx
+    8048ea2:	75 0c                	jne    8048eb0 <fun7+0x1c>
+
+    8048ea4:	b8 ff ff ff ff       	mov    $0xffffffff,%eax
+    8048ea9:	eb 37                	jmp    8048ee2 <fun7+0x4e>
+    8048eab:	90                   	nop
+    8048eac:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
+
+    ;; if the input long int >= (edx), jump to 0x8048ec5 
+    8048eb0:	3b 02                	cmp    (%edx),%eax
+    8048eb2:	7d 11                	jge    8048ec5 <fun7+0x31>
+
+    ;; eax < (edx)
+    8048eb4:	83 c4 f8             	add    $0xfffffff8,%esp
+    ;; <func7>( (edx+4) ,the input long int )
+    8048eb7:	50                   	push   %eax
+    8048eb8:	8b 42 04             	mov    0x4(%edx),%eax
+    8048ebb:	50                   	push   %eax
+    8048ebc:	e8 d3 ff ff ff       	call   8048e94 <fun7>
+
+    ;; return eax *= 2, exit
+    8048ec1:	01 c0                	add    %eax,%eax
+    8048ec3:	eb 1d                	jmp    8048ee2 <fun7+0x4e>
+
+    ;; the input long int >= (edx)
+    ;; if (edx) == eax, return eax=0
+    8048ec5:	3b 02                	cmp    (%edx),%eax
+    8048ec7:	74 17                	je     8048ee0 <fun7+0x4c>
+
+    ;; the input long int > (edx)
+    8048ec9:	83 c4 f8             	add    $0xfffffff8,%esp
+    ;; <fun7>( (edx+8) ,the input long int )
+    8048ecc:	50                   	push   %eax
+    8048ecd:	8b 42 08             	mov    0x8(%edx),%eax
+    8048ed0:	50                   	push   %eax
+    8048ed1:	e8 be ff ff ff       	call   8048e94 <fun7>
+
+    ;; fun7 return 2*eax + 1
+    8048ed6:	01 c0                	add    %eax,%eax
+    8048ed8:	40                   	inc    %eax
+    8048ed9:	eb 07                	jmp    8048ee2 <fun7+0x4e>
+
+    8048edb:	90                   	nop
+    8048edc:	8d 74 26 00          	lea    0x0(%esi,%eiz,1),%esi
+
+    8048ee0:	31 c0                	xor    %eax,%eax
+
+    从上面代码可看出函数原型是:fun7( void *address, long int number ).
+    当 number == *(int*)address, fun7( address, number) = 0
+    当 number > *(int*)address, fun7( address, number) = 2*fun7( address+8, number ) + 1
+    当 number < *(int*)address, fun7( address, number) = 2*fun7( address+4, number )
+
+    从上面可以看出, 上面的address表示的是棵二叉树(左子树的值<父节点的值, 右子树的值>父节点的值):
+    struct BST
+    {
+        int num;
+        struct BST *left;
+        struct BST *right;
+    } *bst;
+    则上面的递推式可表示为:
+    当 number == bst->num, fun7( bst, number ) = 0;
+    当 number > bst->num, fun7( bst, number ) = 2*fun7( bst->right, number ) + 1;
+    当 number < bst->num, fun7( bst, number ) = 2*fun7( bst->left, number );
+
+    鉴于<secret_phase>需要fun7( (struct BST *)0x804b320, number )返回7,一个奇数,所以第一步应该执行第二钟情况,
+    又经观察发现以下递推规律:
+        fun7( (struct BST *)0x804b320, number )
+    =   2 * fun7( (struct BST *)0x804b320->right, number ) + 1
+    =   2 * (2 * fun7( (struct BST *)0x804b320->right->right, number ) + 1) + 1
+    =   4 * fun7( (struct BST *)0x804b320->right->right, number ) + 3
+    =   4 * (2 * fun7( (struct BST *)0x804b320->right->right->right, number ) + 1) + 3
+    =   8 * fun7( (struct BST *)0x804b320->right->right->right, number ) + 7
+
+    因此当 number == (struct BST *)0x804b320->right->right->right->num, fun7便可返回7
+
+    用gdb查看,
+    x/wx 0x804b320+8  ==>  0x0804b308 
+    x/wx 0x804b308+8  ==>  0x0804b2d8
+    x/wx 0x804b2d8+8  ==>  0x0804b278
+    x/d  0x0804b278   ==>  1001
+
+    因此应输入1001
+    
+
+
+
+
+AMD64-Version:
+objdump -d bomb_64 > bomb_assembly_64.S
+
+Phase 1:
+    打开bomb_assembly_64.S,定位到<phase_1>函数,可以看到以下代码:
+
+    400e74:	be f8 1a 40 00       	mov    $0x401af8,%esi
+    400e79:	e8 bf 03 00 00       	callq  40123d <strings_not_equal>
+
+    因为64位有大量寄存器,因此参数传递更倾向于用寄存器而不是栈
+    参数压入寄存器的顺序是rdi, rsi, rdx, rcx, r8, r9
+    用户字串在传入<phase_1>时已经放入rdi,
+    因此函数只需要把比较函数的指针放入esi
+
+    用gdb查看, x/s 0x401af8, 得到:
+    Science isn't about why, it's about why not?

