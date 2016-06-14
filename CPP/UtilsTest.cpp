@@ -134,9 +134,15 @@ TEST_CASE(TypeList)
     using L1 = CYTL::TypeList<>;
     using L2 = CYTL::TypeList<int>;
     using L3 = CYTL::TypeList<int, char, double>;
+    using ReverseL3 = CYTL::TypeList<double, char, int>;
     using L4 = CYTL::TypeList<int, char, double, int>;
     using L5 = CYTL::TypeList<int, char, int, double, int, char, double>;
     using L6 = CYTL::TypeList<float, char, double, float>;
+
+    // Car
+    CYTL::StaticTypeCheckEQ<CYTL::Car<L6>, float>();
+    // Cdr
+    CYTL::StaticTypeCheckEQ< CYTL::Cdr<L3>, CYTL::TypeList<char, double> >();
 
     // TypeLength
     static_assert(CYTL::TypeLength<L1>::value == 0, "");
@@ -161,6 +167,9 @@ TEST_CASE(TypeList)
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, CYTL::NullType>, L3>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, L1>, L3>();
     CYTL::StaticTypeCheckEQ<CYTL::TypeAppend<L3, L2>, L4>();
+
+    // Reverse
+    CYTL::StaticTypeCheckEQ<CYTL::TypeReverse<L3>, ReverseL3>();
 
     // TypeErase
     CYTL::StaticTypeCheckEQ<CYTL::TypeErase<L1, int>, L1>();

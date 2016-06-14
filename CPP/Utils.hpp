@@ -165,6 +165,22 @@ namespace CYTL
     // TypeList
     template<class... T> struct TypeList;
 
+    // Car
+    template<class L> struct _Car;
+    template<class H, class... T> struct _Car< TypeList<H, T...> > { using type = H; };
+    template<> struct _Car< TypeList<> > { using type = NullType; };
+
+    template<class L>
+    using Car = typename _Car<L>::type;
+
+    // Cdr
+    template<class L> struct _Cdr;
+    template<class H, class... T> struct _Cdr< TypeList<H, T...> > { using type = TypeList<T...>; };
+    template<> struct _Cdr< TypeList<> > { using type = NullType; };
+
+    template<class L>
+    using Cdr = typename _Cdr<L>::type;
+
     // TypeLength
     template<class L> struct TypeLength;
     template<> struct TypeLength< TypeList<> >{ static const int value = 0; };
@@ -208,6 +224,17 @@ namespace CYTL
 
     template<class L, class T>
     using TypeAppend = typename _TypeAppend<L, T>::type;
+
+    // Reverse
+    template<class L> struct _TypeReverse;
+    template<class H> struct _TypeReverse< TypeList<H> > { using type = TypeList<H>; };
+    template<> struct _TypeReverse< TypeList<> > { using type = TypeList<>; };
+    template<class H, class... T>
+    struct _TypeReverse< TypeList<H, T...> >
+    { using type = TypeAppend< typename _TypeReverse< TypeList<T...> >::type, TypeList<H> >; };
+
+    template<class L>
+    using TypeReverse = typename _TypeReverse<L>::type;
 
     // TypeErase
     template<class L, class T> struct _TypeErase;
