@@ -207,10 +207,10 @@ TEST_CASE(TypeOrdering)
     CYTL::StaticTypeCheckEQ<CYTL::TypePartialOrder<GUIL>, SortedGUIL>();
 }
 
-namespace{ template<class T> struct Holder { T value; }; }
+namespace{ template<class T> struct ScatterHolder { T value; }; }
 TEST_CASE(GenScatterHierarchy)
 {
-    using Info = CYTL::GenScatterHierarchy<CYTL::TypeList<int, std::string, int, char, std::string>, Holder>;
+    using Info = CYTL::GenScatterHierarchy<CYTL::TypeList<int, std::string, int, char, std::string>, ScatterHolder>;
 
     Info info;
 
@@ -252,4 +252,33 @@ TEST_CASE(Tuple)
 
     CYTL::Field<3>(tuple) = "UI";
     EXPECT_EQ(CYTL::Field<3>(tuple), "UI");
+}
+
+namespace
+{
+    template<class T, class Base>
+    struct LinearHolder: public Base
+    { T value; };
+}
+TEST_CASE(GenLinearHierarchy)
+{
+    using Info = CYTL::GenLinearHierarchy<CYTL::TypeList<int, std::string, int, char, std::string>, LinearHolder>;
+
+    Info info;
+
+    // Field
+    CYTL::Field<0>(info).value = 4;
+    CYTL::Field<1>(info).value = "Hi";
+    CYTL::Field<2>(info).value = 9;
+    CYTL::Field<3>(info).value = 'a';
+    CYTL::Field<4>(info).value = "UI";
+
+    EXPECT_EQ(CYTL::Field<0>(info).value, 4);
+    EXPECT_EQ(CYTL::Field<1>(info).value, "Hi");
+    EXPECT_EQ(CYTL::Field<2>(info).value, 9);
+    EXPECT_EQ(CYTL::Field<3>(info).value, 'a');
+    EXPECT_EQ(CYTL::Field<4>(info).value, "UI");
+
+    CYTL::Field<2>(info).value = 19;
+    EXPECT_EQ(CYTL::Field<2>(info).value, 19);
 }

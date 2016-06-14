@@ -362,12 +362,49 @@ namespace CYTL
     template<class... T>
     using Tuple = GenScatterHierarchy<TypeList<T...>, _TupleHolder>;
 
+    // Field
     template<int N, class... T>
     constexpr inline typename _FieldHelper<Tuple<T...>, N>::type::Base::type&
     Field(Tuple<T...>& obj) noexcept
     {
         using BT = typename _FieldHelper<Tuple<T...>, N>::type;
         return static_cast<typename BT::Base&>( static_cast<BT&>(obj) )._value;
+    }
+
+
+    // ---------------------------------------
+    // GenLinearHierarchy
+    template<class L, template<class, class> class Holder, class Root = EmptyType>
+    struct GenLinearHierarchy;
+    template<template<class, class> class Holder, class Root>
+    struct GenLinearHierarchy<TypeList<>, Holder, Root> {};
+    template<class H, template<class, class> class Holder, class Root>
+    struct GenLinearHierarchy<TypeList<H>, Holder, Root>
+        : public Holder<H, Root>
+    { using Base = Holder<H, Root>; };
+    template<class H, class... T, template<class, class> class Holder, class Root>
+    struct GenLinearHierarchy<TypeList<H, T...>, Holder, Root>
+        : public Holder< H, GenLinearHierarchy<TypeList<T...>, Holder, Root> >
+    { using Base = Holder< H, GenLinearHierarchy<TypeList<T...>, Holder, Root> >; };
+
+    // _FieldHelper
+    template<class H, class... T, template<class, class> class Holder, class Root, int N>
+    struct _FieldHelper<GenLinearHierarchy<TypeList<H, T...>, Holder, Root>, N>
+    { using type = typename _FieldHelper<GenLinearHierarchy<TypeList<T...>, Holder, Root>, N-1>::type; };
+    template<class H, class... T, template<class, class> class Holder, class Root>
+    struct _FieldHelper<GenLinearHierarchy<TypeList<H, T...>, Holder, Root>, 0>
+    { using type = typename GenLinearHierarchy<TypeList<H, T...>, Holder, Root>::Base; };
+    template<template<class, class> class Holder, class Root, int N>
+    struct _FieldHelper<GenLinearHierarchy<TypeList<>, Holder, Root>, N>
+    { using type = NullType; };
+
+    // Field
+    template<int N, class... T, template<class, class> class Holder, class Root>
+    constexpr inline typename _FieldHelper<GenLinearHierarchy<TypeList<T...>, Holder, Root>, N>::type&
+    Field(GenLinearHierarchy<TypeList<T...>, Holder, Root>& obj) noexcept
+    {
+        using RT = typename _FieldHelper<GenLinearHierarchy<TypeList<T...>, Holder, Root>, N>::type;
+        return static_cast<RT&>(obj);
     }
 
 } // namespace CYTL
