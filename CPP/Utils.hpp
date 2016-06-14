@@ -346,12 +346,12 @@ namespace CYTL
     { using type = typename _FieldHelper<GenScatterHierarchy<TypeList<Tail...>, Holder, M+2>, N-1>::type; };
 
     // Field
-    template<int N, class Hierarchy>
-    constexpr inline typename _FieldHelper<Hierarchy, N>::type::Base&
-    Field(Hierarchy& obj) noexcept
+    template<int N, class... T, template<class> class Holder>
+    constexpr inline typename _FieldHelper<GenScatterHierarchy<TypeList<T...>, Holder, 0>, N>::type::Base&
+    Field(GenScatterHierarchy<TypeList<T...>, Holder, 0>& obj) noexcept
     {
-        using T = typename _FieldHelper<Hierarchy, N>::type;
-        return static_cast<typename T::Base&>( static_cast<T&>(obj) );
+        using BT = typename _FieldHelper<GenScatterHierarchy<TypeList<T...>, Holder, 0>, N>::type;
+        return static_cast<typename BT::Base&>( static_cast<BT&>(obj) );
     }
 
 

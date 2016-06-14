@@ -267,13 +267,13 @@ TEST_CASE(GenLinearHierarchy)
     Info info;
 
     // Field
-    CYTL::Field<0>(info).value = 4;
+    CYTL::Field<0>(info).value = 5;
     CYTL::Field<1>(info).value = "Hi";
     CYTL::Field<2>(info).value = 9;
     CYTL::Field<3>(info).value = 'a';
     CYTL::Field<4>(info).value = "UI";
 
-    EXPECT_EQ(CYTL::Field<0>(info).value, 4);
+    EXPECT_EQ(CYTL::Field<0>(info).value, 5);
     EXPECT_EQ(CYTL::Field<1>(info).value, "Hi");
     EXPECT_EQ(CYTL::Field<2>(info).value, 9);
     EXPECT_EQ(CYTL::Field<3>(info).value, 'a');
