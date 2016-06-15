@@ -139,10 +139,10 @@ TEST_CASE(TypeList)
     using L5 = CYTL::TypeList<int, char, int, double, int, char, double>;
     using L6 = CYTL::TypeList<float, char, double, float>;
 
-    // Car
-    CYTL::StaticTypeCheckEQ<CYTL::Car<L6>, float>();
-    // Cdr
-    CYTL::StaticTypeCheckEQ< CYTL::Cdr<L3>, CYTL::TypeList<char, double> >();
+    // TypeCar
+    CYTL::StaticTypeCheckEQ<CYTL::TypeCar<L6>, float>();
+    // TypeCdr
+    CYTL::StaticTypeCheckEQ< CYTL::TypeCdr<L3>, CYTL::TypeList<char, double> >();
 
     // TypeLength
     static_assert(CYTL::TypeLength<L1>::value == 0, "");

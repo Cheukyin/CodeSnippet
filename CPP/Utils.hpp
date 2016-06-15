@@ -165,21 +165,21 @@ namespace CYTL
     // TypeList
     template<class... T> struct TypeList;
 
-    // Car
-    template<class L> struct _Car;
-    template<class H, class... T> struct _Car< TypeList<H, T...> > { using type = H; };
-    template<> struct _Car< TypeList<> > { using type = NullType; };
+    // TypeCar
+    template<class L> struct _TypeCar;
+    template<class H, class... T> struct _TypeCar< TypeList<H, T...> > { using type = H; };
+    template<> struct _TypeCar< TypeList<> > { using type = NullType; };
 
     template<class L>
-    using Car = typename _Car<L>::type;
+    using TypeCar = typename _TypeCar<L>::type;
 
-    // Cdr
-    template<class L> struct _Cdr;
-    template<class H, class... T> struct _Cdr< TypeList<H, T...> > { using type = TypeList<T...>; };
-    template<> struct _Cdr< TypeList<> > { using type = NullType; };
+    // TypeCdr
+    template<class L> struct _TypeCdr;
+    template<class H, class... T> struct _TypeCdr< TypeList<H, T...> > { using type = TypeList<T...>; };
+    template<> struct _TypeCdr< TypeList<> > { using type = NullType; };
 
     template<class L>
-    using Cdr = typename _Cdr<L>::type;
+    using TypeCdr = typename _TypeCdr<L>::type;
 
     // TypeLength
     template<class L> struct TypeLength;
