@@ -38,7 +38,7 @@ namespace CYTL
     };
 
     // ConcreteFactory
-    template<class AbstractFact, class ProductList, template<class, class> class Unit = ConcreteFactoryUnit>
+    template<class AbstractFact, class ProductList = typename AbstractFact::ProductList, template<class, class> class Unit = ConcreteFactoryUnit>
     struct ConcreteFactory: public GenLinearHierarchy<TypeReverse<ProductList>, Unit, AbstractFact>
     {};
 
