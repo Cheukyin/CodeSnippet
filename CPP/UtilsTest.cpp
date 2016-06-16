@@ -291,3 +291,23 @@ TEST_CASE(GenLinearHierarchy)
     CYTL::Field<2>(info).value = 19;
     EXPECT_EQ(CYTL::Field<2>(info).value, 19);
 }
+
+namespace
+{
+    template<class T1st, class T2nd>
+    struct TypeBindTest
+    {
+        using type1st = T1st;
+        using type2nd = T2nd;
+    };
+}
+TEST_CASE(TypeBind)
+{
+    using t1 = CYTL::TypeBind1st<TypeBindTest, int>::Type<char>;
+    CYTL::StaticTypeCheckEQ<typename t1::type1st, int>();
+    CYTL::StaticTypeCheckEQ<typename t1::type2nd, char>();
+
+    using t2 = CYTL::TypeBind2nd<TypeBindTest, int>::Type<char>;
+    CYTL::StaticTypeCheckEQ<typename t2::type1st, char>();
+    CYTL::StaticTypeCheckEQ<typename t2::type2nd, int>();
+}

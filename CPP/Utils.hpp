@@ -434,6 +434,20 @@ namespace CYTL
         return static_cast<RT&>(obj);
     }
 
+
+    // ---------------------------------------
+    // TypeBind
+
+    // TypeBind1st
+    template<template<class, class>class Tmp, class T>
+    struct TypeBind1st
+    { template<class U> struct Type: public Tmp<T, U> {}; };
+
+    // TypeBind2nd
+    template<template<class, class>class Tmp, class T>
+    struct TypeBind2nd
+    { template<class U> struct Type: public Tmp<U, T> {}; };
+
 } // namespace CYTL
 
 #endif // __CYTL_UTILS__
