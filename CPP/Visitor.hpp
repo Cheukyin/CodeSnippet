@@ -12,13 +12,21 @@ namespace CYTL
     struct AcyclicBaseVisitor
     { virtual ~AcyclicBaseVisitor() {} };
 
+    // DefaultCatchAll
+    template <class ReturnType, class VisitableType>
+    struct DefaultCatchAll
+    {
+        static ReturnType onUnknownVisitor(VisitableType&, AcyclicBaseVisitor&)
+        { return ReturnType(); }
+    };
+
     // AcyclicVisitor
     template<class VisitableType, class ReturnType = void>
     struct AcyclicVisitor
     { virtual ReturnType visit(VisitableType&) = 0; };
 
     // BaseVisitable
-    template<class ReturnType = void>
+    template<class ReturnType = void, template <class, class> class CatchAll = DefaultCatchAll>
     struct BaseVisitable
     {
         virtual ~BaseVisitable() {}
@@ -31,7 +39,7 @@ namespace CYTL
             using VisitorType = AcyclicVisitor<VisitableType, ReturnType>;
             if(VisitorType* p = dynamic_cast<VisitorType*>(&visitor))
                 return p->visit(visited);
-            return ReturnType();
+            return CatchAll<ReturnType, VisitableType>::onUnknownVisitor(visited, visitor);
         }
     };
 
