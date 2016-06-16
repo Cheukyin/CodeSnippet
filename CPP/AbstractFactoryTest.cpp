@@ -1,6 +1,5 @@
 #include "AbstractFactory.hpp"
 #include "UnitTest.hpp"
-#include <typeinfo>
 #include <string>
 
 namespace
