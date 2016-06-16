@@ -43,26 +43,6 @@ namespace CYTL
     struct ConcreteFactory: public GenLinearHierarchy<TypeReverse<ProductList>, Unit, AbstractFact>
     {};
 
-
-    // ---------------------------------------
-    // Prototype Abstract Factory
-
-    template<class Product, class Base>
-    struct PrototypeFactoryUnit: public Base
-    {
-        using AbstractProduct = TypeCar<typename Base::ProductList>;
-        using ProductList = TypeCdr<typename Base::ProductList>;
-
-        Product* DoCreate(Type2Type<AbstractProduct>) override
-        {
-            if(pPrototype_) return pPrototype_->Clone();
-            return nullptr;
-        }
-
-    private:
-        AbstractProduct* pPrototype_{nullptr};
-    };
-
 } // namespace CYTL
 
 #endif // __CYTL_ABSTRACTFACTORY__
