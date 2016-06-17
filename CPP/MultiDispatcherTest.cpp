@@ -17,7 +17,7 @@ namespace
     struct B3: B {};
 }
 
-TEST_CASE(AsymmetricStaticMultiDispatcher)
+TEST_CASE(AsymmetricStaticDoubleDispatcher)
 {
     struct TestExecutor
     {
@@ -45,9 +45,9 @@ TEST_CASE(AsymmetricStaticMultiDispatcher)
 
     TestExecutor executor;
 
-    using Dispatcher = CYTL::StaticMultiDispatcher<TestExecutor,
-                                                   A, CYTL::TypeList<A1, A2, A3, A11>,
-                                                   B, CYTL::TypeList<B1, B2, B3> >;
+    using Dispatcher = CYTL::StaticDoubleDispatcher<TestExecutor,
+                                                    A, CYTL::TypeList<A1, A2, A3, A11>,
+                                                    B, CYTL::TypeList<B1, B2, B3> >;
 
     std::shared_ptr<A> a(new A1);
     std::shared_ptr<B> b(new B1);
