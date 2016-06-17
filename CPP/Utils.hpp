@@ -176,6 +176,7 @@ namespace CYTL
     // TypeCdr
     template<class L> struct _TypeCdr;
     template<class H, class... T> struct _TypeCdr< TypeList<H, T...> > { using type = TypeList<T...>; };
+    template<class H> struct _TypeCdr< TypeList<H> > { using type = NullType; };
     template<> struct _TypeCdr< TypeList<> > { using type = NullType; };
 
     template<class L>
