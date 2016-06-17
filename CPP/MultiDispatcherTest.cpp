@@ -17,7 +17,7 @@ namespace
     struct B3: B {};
 }
 
-TEST_CASE(StaticMultiDispatcher)
+TEST_CASE(AsymmetricStaticMultiDispatcher)
 {
     struct TestExecutor
     {

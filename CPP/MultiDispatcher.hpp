@@ -8,9 +8,10 @@ namespace CYTL
     // ---------------------------------------
     // StaticMultiDispatcher
 
-    template<class Executor,
+    template<class Executor, bool isSymmetric,
              class BaseLhs, class TypesLhs,
-             class BaseRhs, class TypesRhs>
+             class BaseRhs, class TypesRhs,
+             class OriginTypeList> // Only used when isSymmetric == True && TypesLhs == TypesRhs
     struct _StaticMultiDispatcher
     {
         using Head = TypeCar<TypesLhs>;
@@ -19,36 +20,60 @@ namespace CYTL
         static typename Executor::ReturnType dispatch(BaseLhs& lhs, BaseRhs& rhs, Executor exec)
         {
             if(Head* p = dynamic_cast<Head*>(&lhs))
-                return _StaticMultiDispatcher<Executor,
-                                             BaseLhs, NullType,
-                                             BaseRhs, TypesRhs
-                                             >::dispatchRhs(*p, rhs, exec);
-            else return _StaticMultiDispatcher<Executor,
-                                              BaseLhs, Tail,
-                                              BaseRhs, TypesRhs
-                                              >::dispatch(lhs, rhs, exec);
+                return _StaticMultiDispatcher<Executor, isSymmetric,
+                                              BaseLhs, NullType,
+                                              BaseRhs, TypesRhs,
+                                              OriginTypeList
+                                              >::dispatchRhs(*p, rhs, exec);
+            else return _StaticMultiDispatcher<Executor, isSymmetric,
+                                               BaseLhs, Tail,
+                                               BaseRhs, TypesRhs,
+                                               OriginTypeList
+                                               >::dispatch(lhs, rhs, exec);
 
         }
     };
 
-    template<class Executor,
+    template<class Executor, bool isSymmetric,
              class BaseLhs,
-             class BaseRhs, class TypesRhs>
-    struct _StaticMultiDispatcher<Executor,
+             class BaseRhs, class TypesRhs,
+             class OriginTypeList> // Only used when isSymmetric == True && TypesLhs == TypesRhs
+    struct _StaticMultiDispatcher<Executor, isSymmetric,
                                   BaseLhs, NullType,
-                                  BaseRhs, TypesRhs>
+                                  BaseRhs, TypesRhs,
+                                  OriginTypeList>
     {
         using Head = TypeCar<TypesRhs>;
         using Tail = TypeCdr<TypesRhs>;
+
+        template<bool swapArgs, class ConcreteLhs, class ConcreteRhs>
+        struct InvocationTraits
+        {
+            static typename Executor::ReturnType dispatch(ConcreteLhs& lhs, ConcreteRhs& rhs, Executor& exec)
+            { return exec.exec(lhs, rhs); }
+        };
+
+        template<class ConcreteLhs, class ConcreteRhs>
+        struct InvocationTraits<true, ConcreteLhs, ConcreteRhs>
+        {
+            static typename Executor::ReturnType dispatch(ConcreteLhs& lhs, ConcreteRhs& rhs, Executor& exec)
+            { return exec.exec(rhs, lhs); }
+        };
 
         template<class ConcreteLhs>
         static typename Executor::ReturnType dispatchRhs(ConcreteLhs& lhs, BaseRhs& rhs, Executor exec)
         {
             if(Head* p = dynamic_cast<Head*>(&rhs))
-                return exec.exec(lhs, *p);
-            else return _StaticMultiDispatcher<Executor,
+            {
+                static const bool swapArgs = isSymmetric
+                                          && (IndexOf<Head, OriginTypeList>::value
+                                             < IndexOf<ConcreteLhs, OriginTypeList>::value);
+                return InvocationTraits<swapArgs, ConcreteLhs, Head>::dispatch(lhs, *p, exec);
+            }
+            else return _StaticMultiDispatcher<Executor, isSymmetric,
                                                BaseLhs, NullType,
-                                               BaseRhs, Tail
+                                               BaseRhs, Tail,
+                                               OriginTypeList
                                                >::dispatchRhs(lhs, rhs, exec);
         }
 
@@ -56,23 +81,27 @@ namespace CYTL
         { return exec.onError(lhs, rhs); }
     };
 
-    template<class Executor,
+    template<class Executor, bool isSymmetric,
              class BaseLhs, class TypesLhs,
-             class BaseRhs>
-    struct _StaticMultiDispatcher<Executor,
+             class BaseRhs,
+             class OriginTypeList> // Only used when isSymmetric == True && TypesLhs == TypesRhs
+    struct _StaticMultiDispatcher<Executor, isSymmetric,
                                   BaseLhs, TypesLhs,
-                                  BaseRhs, NullType>
+                                  BaseRhs, NullType,
+                                  OriginTypeList>
     {
         static typename Executor::ReturnType dispatchRhs(BaseLhs& lhs, BaseRhs& rhs, Executor exec)
         { return exec.onError(lhs, rhs); }
     };
 
-    template<class Executor,
+    template<class Executor, bool isSymmetric,
              class BaseLhs,
-             class BaseRhs>
-    struct _StaticMultiDispatcher<Executor,
+             class BaseRhs,
+             class OriginTypeList> // Only used when isSymmetric == True && TypesLhs == TypesRhs
+    struct _StaticMultiDispatcher<Executor, isSymmetric,
                                   BaseLhs, NullType,
-                                  BaseRhs, NullType>
+                                  BaseRhs, NullType,
+                                  OriginTypeList>
     {
         static typename Executor::ReturnType dispatch(BaseLhs& lhs, BaseRhs& rhs, Executor exec)
         { return exec.onError(lhs, rhs); }
@@ -84,9 +113,17 @@ namespace CYTL
     template<class Executor,
              class BaseLhs, class TypesLhs,
              class BaseRhs = BaseLhs, class TypesRhs = TypesLhs>
-    using StaticMultiDispatcher = _StaticMultiDispatcher<Executor,
+    using StaticMultiDispatcher = _StaticMultiDispatcher<Executor, false,
                                                          BaseLhs, TypePartialOrder<TypesLhs>,
-                                                         BaseRhs, TypePartialOrder<TypesRhs> >;
+                                                         BaseRhs, TypePartialOrder<TypesRhs>,
+                                                         TypePartialOrder<TypesLhs> >;
+
+    template<class Executor,
+             class Base, class Types>
+    using StaticSymmetricDispatcher = _StaticMultiDispatcher<Executor, true,
+                                                             Base, TypePartialOrder<Types>,
+                                                             Base, TypePartialOrder<Types>,
+                                                             TypePartialOrder<Types> >;
 
 } // namespace CYTL
 
