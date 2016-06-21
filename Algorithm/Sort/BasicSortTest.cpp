@@ -39,5 +39,22 @@ int main()
     assert(vec == vecbench);
 
 
+    // ---------------------------------------
+    // shell sort
+    vec = {55,3,4,6,7,5,7,5,78};
+    vecbench = vec;
+
+    CYTL::shellSort(vec.begin(), vec.end());
+    std::sort(vecbench.begin(), vecbench.end());
+    assert(vec == vecbench);
+
+    vec = {5,5, 5, 5, 5, 1};
+    vecbench = vec;
+
+    CYTL::shellSort(vec.begin(), vec.end());
+    std::sort(vecbench.begin(), vecbench.end());
+    assert(vec == vecbench);
+
+
     return 0;
 }

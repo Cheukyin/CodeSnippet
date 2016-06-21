@@ -52,6 +52,33 @@ namespace CYTL
         }
     }
 
+
+    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
+    void shellSort(Iterator begin, Iterator end,
+                   Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    {
+        if(begin >= end) return;
+
+        size_t N = end - begin;
+
+        size_t h = 1;
+        while(h < N/3) h = 3*h + 1;
+
+        while(h >= 1)
+        {
+            for(Iterator iteri = begin + h; iteri < end; iteri++)
+            {
+                for(Iterator iterj = iteri; iterj >= begin + h; iterj -= h)
+                {
+                    if( cmp(*iterj, *(iterj-h)) ) swap(*iterj, *(iterj-h));
+                    else break;
+                }
+            }
+
+            h /= 3;
+        }
+    }
+
 }
 
 #endif // __CYTL__BASICSORT__
