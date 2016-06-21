@@ -31,6 +31,27 @@ namespace CYTL
             }
         }
     }
+
+
+    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
+    void selectionSort(Iterator begin, Iterator end,
+                       Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    {
+        if(begin >= end) return;
+
+        for(Iterator iter = begin; iter < end; iter++)
+        {
+            Iterator smallestIter = iter;
+            for(Iterator it = iter+1; it < end; it++)
+            {
+                if( cmp(*it, *smallestIter) )
+                    smallestIter = it;
+            }
+
+            if(smallestIter != iter) swap(*smallestIter, *iter);
+        }
+    }
+
 }
 
 #endif // __CYTL__BASICSORT__
