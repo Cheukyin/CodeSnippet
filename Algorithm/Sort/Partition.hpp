@@ -21,10 +21,25 @@ namespace CYTL
 
         Iterator lo = begin, hi = end-1;
 
-        while(lo < hi)
+        while(lo <= hi)
         {
             if( pred(*lo) ) lo++;
             else swap(*lo, *(hi--));
+        }
+    }
+
+    template<class Iterator, class ThreePred>
+    void threeWayPartition(Iterator begin, Iterator end, ThreePred pred)
+    {
+        if(begin >= end) return;
+
+        Iterator lo = begin, mid = begin, hi = end-1;
+
+        while(mid <= hi)
+        {
+            if(pred(*mid) > 0) swap(*(lo++), *(mid++));
+            else if(pred(*mid) == 0) mid++;
+            else swap(*mid, *(hi--));
         }
     }
 
