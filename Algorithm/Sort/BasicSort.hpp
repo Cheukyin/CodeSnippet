@@ -140,9 +140,8 @@ namespace CYTL
 
     // ------------------------------------------------------
     // recursive merge sort
-    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
-    void merge(Iterator begin, Iterator mid, Iterator end, Iterator auxBegin,
-               Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    template<class Iterator, class Comparable>
+    void merge(Iterator begin, Iterator mid, Iterator end, Iterator auxBegin, Comparable cmp)
     {
         Iterator it1 = begin, it2 = mid+1;
 
@@ -156,25 +155,29 @@ namespace CYTL
         while(it2 < end) *auxBegin = *(it2++);
     }
 
-    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
-    void recursiveMergeSortHelper(Iterator begin, Iterator end, Iterator auxBegin,
-                                  Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    template<class Iterator, class Comparable>
+    void recursiveMergeSortHelper(Iterator begin, Iterator end, Iterator auxBegin, Comparable cmp)
     {
+        if(begin >= end) return;
+
         Iterator mid = begin + (end - begin) / 2;
+        Iterator auxMid = auxBegin + (end - begin) / 2;
+        Iterator auxEnd = auxBegin + (end - begin);
 
-        recursiveMergeSortHelper(begin, mid, auxBegin, cmp);
-        recursiveMergeSortHelper(mid+1, end, auxBegin + (mid - begin), cmp);
+        recursiveMergeSortHelper(begin, mid+1, auxBegin, cmp);
+        recursiveMergeSortHelper(mid+1, end, auxMid+1, cmp);
 
-        merge(auxBegin, auxBegin + (end-begin) / 2, auxBegin + (end-begin), begin, cmp);
+        merge(auxBegin, auxMid, auxEnd, begin, cmp);
     }
 
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     void recursiveMergeSort(Iterator begin, Iterator end,
                             Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
     {
-        if(begin >= end) return;
-
         Iterator auxBegin = new typename std::iterator_traits<Iterator>::value_type[end - begin];
+
+        for(Iterator it1 = begin, it2 = auxBegin; it1 < end; it1++, it2++)
+            *it2 = *it1;
 
         recursiveMergeSortHelper(begin, end, auxBegin, cmp);
     }
