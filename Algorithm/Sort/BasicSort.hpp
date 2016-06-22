@@ -24,11 +24,14 @@ namespace CYTL
 
         for(Iterator iter = begin+1; iter < end; iter++)
         {
-            for(Iterator it = iter; it >= begin; it--)
+            typename std::iterator_traits<Iterator>::value_type target = *iter;
+            Iterator it = iter;
+            for(; it > begin; it--)
             {
-                if( cmp(*it, *(it-1)) ) swap(*it, *(it-1));
+                if( cmp(target, *(it-1)) ) *it = *(it-1);
                 else break;
             }
+            *it = target;
         }
     }
 
@@ -68,11 +71,14 @@ namespace CYTL
         {
             for(Iterator iteri = begin + h; iteri < end; iteri++)
             {
-                for(Iterator iterj = iteri; iterj >= begin + h; iterj -= h)
+                typename std::iterator_traits<Iterator>::value_type target = *iteri;
+                Iterator iterj = iteri;
+                for(; iterj >= begin + h; iterj -= h)
                 {
-                    if( cmp(*iterj, *(iterj-h)) ) swap(*iterj, *(iterj-h));
+                    if( cmp(target, *(iterj-h)) ) *iterj = *(iterj-h);
                     else break;
                 }
+                *iterj = target;
             }
 
             h /= 3;
