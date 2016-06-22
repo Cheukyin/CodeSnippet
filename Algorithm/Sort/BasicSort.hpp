@@ -16,6 +16,8 @@ namespace CYTL
 
     // [begin, end)
 
+    // ------------------------------------------------------
+    // insertion sort
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     void insertionSort(Iterator begin, Iterator end,
                        Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
@@ -36,6 +38,8 @@ namespace CYTL
     }
 
 
+    // ------------------------------------------------------
+    // selection sort
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     void selectionSort(Iterator begin, Iterator end,
                        Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
@@ -56,6 +60,8 @@ namespace CYTL
     }
 
 
+    // ------------------------------------------------------
+    // shell sort
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     void shellSort(Iterator begin, Iterator end,
                    Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
@@ -86,6 +92,8 @@ namespace CYTL
     }
 
 
+    // ------------------------------------------------------
+    // quick sort
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     Iterator medianOfThree(Iterator begin, Iterator mid, Iterator end,
                            Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
@@ -129,6 +137,47 @@ namespace CYTL
         quickSort(lo+1, end, cmp);
     }
 
+
+    // ------------------------------------------------------
+    // recursive merge sort
+    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
+    void merge(Iterator begin, Iterator mid, Iterator end, Iterator auxBegin,
+               Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    {
+        Iterator it1 = begin, it2 = mid+1;
+
+        while(it1 < mid+1 && it2 < end)
+        {
+            if( cmp(*it1, *it2) ) *auxBegin = *(it1++);
+            else *auxBegin = *(it2++);
+        }
+
+        while(it1 < mid+1) *auxBegin = *(it1++);
+        while(it2 < end) *auxBegin = *(it2++);
+    }
+
+    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
+    void recursiveMergeSortHelper(Iterator begin, Iterator end, Iterator auxBegin,
+                                  Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    {
+        Iterator mid = begin + (end - begin) / 2;
+
+        recursiveMergeSortHelper(begin, mid, auxBegin, cmp);
+        recursiveMergeSortHelper(mid+1, end, auxBegin + (mid - begin), cmp);
+
+        merge(auxBegin, auxBegin + (end-begin) / 2, auxBegin + (end-begin), begin, cmp);
+    }
+
+    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
+    void recursiveMergeSort(Iterator begin, Iterator end,
+                            Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    {
+        if(begin >= end) return;
+
+        Iterator auxBegin = new typename std::iterator_traits<Iterator>::value_type[end - begin];
+
+        recursiveMergeSortHelper(begin, end, auxBegin, cmp);
+    }
 
 }
 
