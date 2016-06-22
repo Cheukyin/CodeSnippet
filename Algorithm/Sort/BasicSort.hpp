@@ -79,6 +79,51 @@ namespace CYTL
         }
     }
 
+
+    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
+    Iterator medianOfThree(Iterator begin, Iterator mid, Iterator end,
+                           Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    {
+        if( cmp(*begin, *mid) )
+        {
+            if( cmp(*mid, *end) ) return mid;
+            else if( cmp(*begin, *end) ) return end;
+            else return begin;
+        }
+        else
+        {
+            if( cmp(*begin, *end) ) return begin;
+            else if( cmp(*mid, *end) ) return end;
+            else return mid;
+        }
+    }
+
+    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
+    void quickSort(Iterator begin, Iterator end,
+                   Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    {
+        if(begin >= end) return;
+
+        Iterator median = medianOfThree(begin, begin + (end-begin) / 2, end-1);
+
+        typename std::iterator_traits<Iterator>::value_type pivotValue = *median;
+        if(begin != median) *median = *begin;
+
+        Iterator lo = begin, hi = end-1;
+        while(lo < hi)
+        {
+            while( lo < hi && cmp(pivotValue, *hi) ) hi--;
+            if(lo < hi) *(lo++) = *hi;
+            while( lo < hi && cmp(*lo, pivotValue) ) lo++;
+            if(lo < hi) *(hi--) = *lo;
+        }
+        *lo = pivotValue;
+
+        quickSort(begin, lo, cmp);
+        quickSort(lo+1, end, cmp);
+    }
+
+
 }
 
 #endif // __CYTL__BASICSORT__

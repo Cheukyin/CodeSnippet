@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <vector>
+#include <iostream>
 
 int main()
 {
@@ -48,10 +49,41 @@ int main()
     std::sort(vecbench.begin(), vecbench.end());
     assert(vec == vecbench);
 
-    vec = {5,5, 5, 5, 5, 1};
+    vec = {5, 5, 5, 5, 5, 1};
     vecbench = vec;
 
     CYTL::shellSort(vec.begin(), vec.end());
+    std::sort(vecbench.begin(), vecbench.end());
+    assert(vec == vecbench);
+
+
+    // ---------------------------------------
+    // quick sort
+    vec = {55,3,4,6,7,5,7,5,78};
+    vecbench = vec;
+
+    CYTL::quickSort(vec.begin(), vec.end());
+    std::sort(vecbench.begin(), vecbench.end());
+    assert(vec == vecbench);
+
+    vec = {5, 5, 5, 5, 5, 1};
+    vecbench = vec;
+
+    CYTL::quickSort(vec.begin(), vec.end());
+    std::sort(vecbench.begin(), vecbench.end());
+    assert(vec == vecbench);
+
+    vec = {1, 2, 3, 4, 5, 6};
+    vecbench = vec;
+
+    CYTL::quickSort(vec.begin(), vec.end());
+    std::sort(vecbench.begin(), vecbench.end());
+    assert(vec == vecbench);
+
+    vec = {6, 5, 4, 3, 2, 1};
+    vecbench = vec;
+
+    CYTL::quickSort(vec.begin(), vec.end());
     std::sort(vecbench.begin(), vecbench.end());
     assert(vec == vecbench);
 
