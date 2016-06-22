@@ -1,9 +1,6 @@
 #ifndef __CYTL__PARTITION__
 #define __CYTL__PARTITION__
 
-#include "Comparable.hpp"
-#include <iterator>
-
 namespace CYTL
 {
     template<class T>
