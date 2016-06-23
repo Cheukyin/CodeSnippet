@@ -201,9 +201,8 @@ namespace CYTL
     }
 
     // [begin, end]
-    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
-    void recursiveMergeSortHelper(Iterator begin, Iterator end,
-                                  Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    template<class Iterator, class Comparable>
+    void recursiveMergeSortHelper(Iterator begin, Iterator end, Comparable cmp)
     {
         if(begin >= end) return;
         if(end-begin+1 <= 3) return insertionSort(begin, end+1, cmp);
