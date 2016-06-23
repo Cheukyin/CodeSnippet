@@ -140,47 +140,87 @@ namespace CYTL
 
     // ------------------------------------------------------
     // recursive merge sort
-    template<class Iterator, class Comparable>
-    void merge(Iterator begin, Iterator mid, Iterator end, Iterator auxBegin, Comparable cmp)
+    template<class Iterator>
+    struct TemporaryBuffer
     {
-        Iterator it1 = begin, it2 = mid+1;
+        typedef typename std::iterator_traits<Iterator>::value_type value_type;
+        typedef value_type* iterator;
+        typedef const value_type* const_iterator;
+        typedef value_type& reference;
+        typedef const value_type& const_reference;
+        typedef std::size_t size_type;
+        typedef std::ptrdiff_t difference_type;
 
-        while(it1 < mid+1 && it2 < end)
+        TemporaryBuffer(int n)
+            : n(n), buf(new value_type[n]),
+              start(buf), finish(buf + n)
+        {}
+
+        TemporaryBuffer(Iterator first, Iterator last)
+            : n(last - first), buf(new value_type[n]),
+              start(buf), finish(buf + n)
         {
-            if( cmp(*it1, *it2) ) *auxBegin = *(it1++);
-            else *auxBegin = *(it2++);
+            Iterator it = first;
+            for(size_type i=0; i<n; i++) *(start+i) = *(it++);
         }
 
-        while(it1 < mid+1) *auxBegin = *(it1++);
-        while(it2 < end) *auxBegin = *(it2++);
+        iterator begin() { return start; }
+        iterator end() { return finish; }
+
+        ~TemporaryBuffer()
+        { delete [] buf; }
+
+        size_type n;
+        iterator buf;
+        iterator start;
+        iterator finish;
+    };
+
+    // [begin, mid+1), [mid+1, end)
+    template<class Iterator, class Comparable>
+    void merge(Iterator begin, Iterator mid, Iterator end, Comparable cmp)
+    {
+        if( !cmp(*(mid+1), *mid) ) return;
+
+        TemporaryBuffer<Iterator> tmpbuf(begin, end);
+
+        typename TemporaryBuffer<Iterator>::iterator auxBegin = tmpbuf.begin();
+        typename TemporaryBuffer<Iterator>::iterator auxEnd = tmpbuf.end();
+        typename TemporaryBuffer<Iterator>::iterator auxMid = auxBegin + (mid - begin);
+
+        typename TemporaryBuffer<Iterator>::iterator it1 = auxBegin, it2 = auxMid+1;
+
+        while(it1 < auxMid+1 && it2 < auxEnd)
+        {
+            if( cmp(*it1, *it2) ) *(begin++) = *(it1++);
+            else *(begin++) = *(it2++);
+        }
+
+        while(it1 < auxMid+1) *(begin++) = *(it1++);
+        while(it2 < auxEnd) *(begin++) = *(it2++);
     }
 
-    template<class Iterator, class Comparable>
-    void recursiveMergeSortHelper(Iterator begin, Iterator end, Iterator auxBegin, Comparable cmp)
+    // [begin, end]
+    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
+    void recursiveMergeSortHelper(Iterator begin, Iterator end,
+                                  Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
     {
         if(begin >= end) return;
+        if(end-begin+1 <= 3) return insertionSort(begin, end+1, cmp);
 
         Iterator mid = begin + (end - begin) / 2;
-        Iterator auxMid = auxBegin + (end - begin) / 2;
-        Iterator auxEnd = auxBegin + (end - begin);
 
-        recursiveMergeSortHelper(begin, mid+1, auxBegin, cmp);
-        recursiveMergeSortHelper(mid+1, end, auxMid+1, cmp);
+        recursiveMergeSortHelper(begin, mid, cmp);
+        recursiveMergeSortHelper(mid+1, end, cmp);
 
-        merge(auxBegin, auxMid, auxEnd, begin, cmp);
+        merge(begin, mid, end+1, cmp);
     }
 
+    // [begin, end)
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     void recursiveMergeSort(Iterator begin, Iterator end,
                             Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
-    {
-        Iterator auxBegin = new typename std::iterator_traits<Iterator>::value_type[end - begin];
-
-        for(Iterator it1 = begin, it2 = auxBegin; it1 < end; it1++, it2++)
-            *it2 = *it1;
-
-        recursiveMergeSortHelper(begin, end, auxBegin, cmp);
-    }
+    { recursiveMergeSortHelper(begin, end-1, cmp); }
 
 }
 
