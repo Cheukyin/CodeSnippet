@@ -14,6 +14,10 @@ namespace CYTL
         t2 = tmp;
     }
 
+    template<class T>
+    T min(const T& t1, const T& t2)
+    { return t1 < t2 ? t1 : t2; }
+
     // [begin, end)
 
     // ------------------------------------------------------
@@ -164,8 +168,8 @@ namespace CYTL
             for(size_type i=0; i<n; i++) *(start+i) = *(it++);
         }
 
-        iterator begin() { return start; }
-        iterator end() { return finish; }
+        iterator begin() const { return start; }
+        iterator end() const { return finish; }
 
         ~TemporaryBuffer()
         { delete [] buf; }
@@ -220,6 +224,21 @@ namespace CYTL
     void recursiveMergeSort(Iterator begin, Iterator end,
                             Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
     { recursiveMergeSortHelper(begin, end-1, cmp); }
+
+    // ------------------------------------------------------
+    // iterative merge sort
+    template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
+    void iterativeMergeSort(Iterator begin, Iterator end,
+                            Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
+    {
+        if(begin >= end) return;
+
+        size_t N = end - begin;
+
+        for(size_t sz = 1; sz < N; sz *= 2)
+            for(size_t lo = 0; lo < N-sz; lo += 2*sz)
+                merge(begin + lo, begin + (lo+sz-1), begin + min(lo+2*sz, N), cmp);
+    }
 
 }
 
