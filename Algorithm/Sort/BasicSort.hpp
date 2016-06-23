@@ -21,7 +21,7 @@ namespace CYTL
     // [begin, end)
 
     // ------------------------------------------------------
-    // insertion sort
+    // insertion sort : stable
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     void insertionSort(Iterator begin, Iterator end,
                        Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
@@ -43,7 +43,7 @@ namespace CYTL
 
 
     // ------------------------------------------------------
-    // selection sort
+    // selection sort : unstable
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     void selectionSort(Iterator begin, Iterator end,
                        Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
@@ -65,7 +65,7 @@ namespace CYTL
 
 
     // ------------------------------------------------------
-    // shell sort
+    // shell sort : unstable
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     void shellSort(Iterator begin, Iterator end,
                    Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
@@ -97,7 +97,7 @@ namespace CYTL
 
 
     // ------------------------------------------------------
-    // quick sort
+    // quick sort : unstable
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     Iterator medianOfThree(Iterator begin, Iterator mid, Iterator end,
                            Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
@@ -143,7 +143,7 @@ namespace CYTL
 
 
     // ------------------------------------------------------
-    // recursive merge sort
+    // recursive merge sort : stable
     template<class Iterator>
     struct TemporaryBuffer
     {
@@ -226,7 +226,7 @@ namespace CYTL
     { recursiveMergeSortHelper(begin, end-1, cmp); }
 
     // ------------------------------------------------------
-    // iterative merge sort
+    // iterative merge sort : stable
     template<class Iterator, class Comparable = Less<typename std::iterator_traits<Iterator>::value_type> >
     void iterativeMergeSort(Iterator begin, Iterator end,
                             Comparable cmp = Less<typename std::iterator_traits<Iterator>::value_type>())
