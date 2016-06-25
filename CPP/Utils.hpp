@@ -4,6 +4,7 @@
 #include <iterator>
 #include <cstddef>
 #include <type_traits>
+#include <memory>
 
 namespace CYTL
 {
@@ -448,6 +449,13 @@ namespace CYTL
     template<template<class, class>class Tmp, class T>
     struct TypeBind2nd
     { template<class U> struct Type: public Tmp<U, T> {}; };
+
+
+    // ---------------------------------------
+    // makeUnique
+    template<class T, class... Ts>
+    std::unique_ptr<T> makeUnique(Ts&&... params)
+    { return std::unique_ptr<T>( new T( std::forward<Ts>(params)... ) ); }
 
 } // namespace CYTL
 
