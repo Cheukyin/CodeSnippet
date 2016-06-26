@@ -464,6 +464,13 @@ namespace CYTL
     RemoveReference<T>&& move(T&& param)
     { return static_cast<RemoveReference<T>&&>(param); }
 
+    // ---------------------------------------
+    // forward
+    template<class T>
+    T&& forward(RemoveReference<T>& param)
+    { return static_cast<T&&>(param); }
+
+
 } // namespace CYTL
 
 #endif // __CYTL_UTILS__
