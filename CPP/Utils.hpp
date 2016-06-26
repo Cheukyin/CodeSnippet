@@ -457,6 +457,13 @@ namespace CYTL
     std::unique_ptr<T> makeUnique(Ts&&... params)
     { return std::unique_ptr<T>( new T( std::forward<Ts>(params)... ) ); }
 
+
+    // ---------------------------------------
+    // move
+    template<class T>
+    RemoveReference<T>&& move(T&& param)
+    { return static_cast<RemoveReference<T>&&>(param); }
+
 } // namespace CYTL
 
 #endif // __CYTL_UTILS__
