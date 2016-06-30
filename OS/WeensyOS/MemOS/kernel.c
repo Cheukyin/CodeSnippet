@@ -81,6 +81,9 @@ int fork(void);
 
 static void process_setup(pid_t pid, int program_number);
 
+static uintptr_t find_free_physic_page(pageowner_t owner);
+static x86_pagetable* copy_pagetable(x86_pagetable* pagedir, int8_t owner);
+
 void kernel(const char* command) {
     hardware_init();
     pageinfo_init();
@@ -143,8 +146,13 @@ void process_setup(pid_t pid, int program_number) {
     process_init(&processes[pid], 0);
 
     // Exercise 2: your code here
-    processes[pid].p_pagetable = kernel_pagetable;
-    ++pageinfo[PAGENUMBER(kernel_pagetable)].refcount;
+    processes[pid].p_pagetable = copy_pagetable(kernel_pagetable, pid);
+    x86_pagetable* pid_pagetable = (x86_pagetable*)PTE_ADDR(processes[pid].p_pagetable->entry[0]);
+    memset(&pid_pagetable->entry[PAGENUMBER(PROC_START_ADDR)], 0,
+           PAGESIZE - sizeof(x86_pageentry_t) * PAGENUMBER(PROC_START_ADDR));
+
+    /* processes[pid].p_pagetable = kernel_pagetable; */
+    /* ++pageinfo[PAGENUMBER(kernel_pagetable)].refcount; */
     int r = program_load(&processes[pid], program_number);
     assert(r >= 0);
 
@@ -155,6 +163,36 @@ void process_setup(pid_t pid, int program_number) {
     virtual_memory_map(processes[pid].p_pagetable, stack_page, stack_page,
                        PAGESIZE, PTE_P|PTE_W|PTE_U);
     processes[pid].p_state = P_RUNNABLE;
+}
+
+
+static uintptr_t find_free_physic_page(pageowner_t owner)
+{
+    uintptr_t i;
+    for(i=0; i < PAGENUMBER(MEMSIZE_PHYSICAL); i++)
+    {
+        if(pageinfo[i].owner == PO_FREE)
+        {
+            pageinfo[i].refcount = 1;
+            pageinfo[i].owner = owner;
+            return PAGEADDRESS(i);
+        }
+    }
+
+    panic("No free Page!");
+}
+
+static x86_pagetable* copy_pagetable(x86_pagetable* pagedir, int8_t owner)
+{
+    x86_pagetable* newpagedir = (x86_pagetable*)find_free_physic_page(owner);
+    x86_pagetable* newpagetable = (x86_pagetable*)find_free_physic_page(owner);
+
+    memset(newpagedir->entry, 0, PAGESIZE);
+    newpagedir->entry[0] = (x86_pageentry_t)newpagetable | PTE_P | PTE_W | PTE_U;
+
+    memcpy(newpagetable->entry, (void*)PTE_ADDR(pagedir->entry[0]), PAGESIZE);
+
+    return newpagedir;
 }
 
 
