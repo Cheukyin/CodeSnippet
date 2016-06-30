@@ -280,11 +280,10 @@ void exception(x86_registers* reg) {
 
 
         // Exercise 3: your code here
-        int r = physical_page_alloc(addr, current->p_pid);
-        if (r >= 0)
-            virtual_memory_map(current->p_pagetable, addr, addr,
-                               PAGESIZE, PTE_P|PTE_W|PTE_U);
-        current->p_registers.reg_eax = r;
+        uintptr_t freepage = find_free_physic_page(current->p_pid);
+        virtual_memory_map(current->p_pagetable, addr, freepage,
+                           PAGESIZE, PTE_P|PTE_W|PTE_U);
+        current->p_registers.reg_eax = 1;
         break;
     }
 
