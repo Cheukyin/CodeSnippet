@@ -76,12 +76,13 @@ static int program_load_segment(proc* p, const elf_program* ph,
     uintptr_t end_file = va + ph->p_filesz, end_mem = va + ph->p_memsz;
     va &= ~(PAGESIZE - 1);              // round to page boundary
 
+    uintptr_t perm = PTE_P | PTE_U | PTE_W;
+
     // allocate memory
     for (uintptr_t page_va = va; page_va < end_mem; page_va += PAGESIZE) {
         if (physical_page_alloc(page_va, p->p_pid) < 0)
             return -1;
-        virtual_memory_map(p->p_pagetable, page_va, page_va,
-                           PAGESIZE, PTE_P|PTE_W|PTE_U);
+        virtual_memory_map(p->p_pagetable, page_va, page_va, PAGESIZE, perm);
     }
     // ensure new memory mappings are active
     lcr3((uintptr_t) p->p_pagetable);
@@ -90,5 +91,9 @@ static int program_load_segment(proc* p, const elf_program* ph,
     memset((uint8_t*) end_file, 0, end_mem - end_file);
 
     // Exercise 6: your code here
+    if((ph->p_flags & ELF_PFLAG_WRITE) == 0) perm = PTE_P | PTE_U;
+    for(uintptr_t page_va = va; page_va < end_mem; page_va += PAGESIZE)
+        virtual_memory_map(p->p_pagetable, page_va, page_va, PAGESIZE, perm);
+
     return 0;
 }

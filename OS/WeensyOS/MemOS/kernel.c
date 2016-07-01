@@ -188,7 +188,7 @@ static x86_pagetable* copy_pagetable(x86_pagetable* pagedir, int8_t owner)
     x86_pagetable* newpagetable = (x86_pagetable*)find_free_physic_page(owner);
 
     memset(newpagedir->entry, 0, PAGESIZE);
-    newpagedir->entry[0] = (x86_pageentry_t)newpagetable | PTE_P | PTE_W | PTE_U;
+    newpagedir->entry[0] = (x86_pageentry_t)newpagetable | PTE_FLAGS(pagedir->entry[0]);
 
     memcpy(newpagetable->entry, (void*)PTE_ADDR(pagedir->entry[0]), PAGESIZE);
 
@@ -336,7 +336,18 @@ void copy_writable_page(uintptr_t va_begin, uintptr_t va_end, pid_t newpid, pid_
     for(va = va_begin; va < va_end; va += PAGESIZE)
     {
         vamapping vam = virtual_memory_lookup(processes[oldpid].p_pagetable, va);
-        if((vam.perm & (PTE_P | PTE_W)) == 0) continue;
+
+        int writable_flag = PTE_P | PTE_W | PTE_U;
+        int readable_flag = PTE_P | PTE_U;
+
+        int isPageWriable = ( (vam.perm & writable_flag) == writable_flag );
+        int isPageReadable = ( (vam.perm & readable_flag) == readable_flag );
+
+        if(!isPageWriable)
+        {
+            if(isPageReadable) pageinfo[vam.pn].refcount++;
+            continue;
+        }
 
         uintptr_t newpage = find_free_physic_page(newpid);
         virtual_memory_map(processes[newpid].p_pagetable, va, newpage, PAGESIZE, vam.perm);
