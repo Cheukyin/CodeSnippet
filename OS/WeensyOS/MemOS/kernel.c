@@ -151,8 +151,6 @@ void process_setup(pid_t pid, int program_number) {
     memset(&pid_pagetable->entry[PAGENUMBER(PROC_START_ADDR)], 0,
            PAGESIZE - sizeof(x86_pageentry_t) * PAGENUMBER(PROC_START_ADDR));
 
-    /* processes[pid].p_pagetable = kernel_pagetable; */
-    /* ++pageinfo[PAGENUMBER(kernel_pagetable)].refcount; */
     int r = program_load(&processes[pid], program_number);
     assert(r >= 0);
 
@@ -160,6 +158,7 @@ void process_setup(pid_t pid, int program_number) {
     processes[pid].p_registers.reg_esp = MEMSIZE_VIRTUAL;
     uintptr_t stack_page = processes[pid].p_registers.reg_esp - PAGESIZE;
     uintptr_t newpage = find_free_physic_page(pid);
+    if(newpage == (uintptr_t)-1) panic("No free pages when setup process");
     virtual_memory_map(processes[pid].p_pagetable, stack_page, newpage,
                        PAGESIZE, PTE_P|PTE_W|PTE_U);
     processes[pid].p_state = P_RUNNABLE;
@@ -179,13 +178,15 @@ static uintptr_t find_free_physic_page(pageowner_t owner)
         }
     }
 
-    panic("No free Page!");
+    return (uintptr_t)-1;
 }
 
 static x86_pagetable* copy_pagetable(x86_pagetable* pagedir, int8_t owner)
 {
     x86_pagetable* newpagedir = (x86_pagetable*)find_free_physic_page(owner);
+    if(newpagedir == (x86_pagetable*)-1) return (x86_pagetable*)-1;
     x86_pagetable* newpagetable = (x86_pagetable*)find_free_physic_page(owner);
+    if(newpagetable == (x86_pagetable*)-1) return (x86_pagetable*)-1;
 
     memset(newpagedir->entry, 0, PAGESIZE);
     newpagedir->entry[0] = (x86_pageentry_t)newpagetable | PTE_FLAGS(pagedir->entry[0]);
@@ -212,6 +213,23 @@ int physical_page_alloc(uintptr_t addr, int8_t owner) {
         pageinfo[PAGENUMBER(addr)].owner = owner;
         return 0;
     }
+}
+
+
+void release_page(pageowner_t owner, uintptr_t physic_page_addr)
+{
+    uintptr_t physic_page_num = PAGENUMBER(physic_page_addr);
+    if(pageinfo[physic_page_num].owner == owner
+       && pageinfo[physic_page_num].refcount > 0
+       && --pageinfo[physic_page_num].refcount == 0)
+        pageinfo[physic_page_num].owner = PO_FREE;
+}
+
+void release_pagetable(pageowner_t owner, x86_pagetable* pagetable)
+{
+    for(uintptr_t i = PAGENUMBER(PROC_START_ADDR); i < PAGENUMBER(MEMSIZE_VIRTUAL); i++)
+        release_page( owner, PTE_ADDR(pagetable->entry[i]) );
+    release_page(owner, (uintptr_t)pagetable);
 }
 
 
@@ -265,6 +283,14 @@ void exception(x86_registers* reg) {
         schedule();
         break;                  /* will not be reached */
 
+    case INT_SYS_EXIT:
+        current->p_state = P_BLOCKED;
+        release_pagetable( current->p_pid, (x86_pagetable*)PTE_ADDR(current->p_pagetable->entry[0]) );
+        release_page(current->p_pid, (uintptr_t)current->p_pagetable);
+        current->p_state = P_FREE;
+        schedule();
+        break;
+
     case INT_SYS_PAGE_ALLOC: {
         uintptr_t addr = current->p_registers.reg_eax;
         // Exercise 1: Your code here
@@ -281,6 +307,12 @@ void exception(x86_registers* reg) {
 
         // Exercise 3: your code here
         uintptr_t freepage = find_free_physic_page(current->p_pid);
+        if(freepage == (uintptr_t)-1)
+        {
+            current->p_registers.reg_eax = -1;
+            break;
+        }
+
         virtual_memory_map(current->p_pagetable, addr, freepage,
                            PAGESIZE, PTE_P|PTE_W|PTE_U);
         current->p_registers.reg_eax = 1;
@@ -330,7 +362,7 @@ void exception(x86_registers* reg) {
 }
 
 
-void copy_writable_page(uintptr_t va_begin, uintptr_t va_end, pid_t newpid, pid_t oldpid)
+int copy_writable_page(uintptr_t va_begin, uintptr_t va_end, pid_t newpid, pid_t oldpid)
 {
     uintptr_t va;
     for(va = va_begin; va < va_end; va += PAGESIZE)
@@ -350,9 +382,13 @@ void copy_writable_page(uintptr_t va_begin, uintptr_t va_end, pid_t newpid, pid_
         }
 
         uintptr_t newpage = find_free_physic_page(newpid);
+        if(newpage == (uintptr_t)-1) return -1;
+
         virtual_memory_map(processes[newpid].p_pagetable, va, newpage, PAGESIZE, vam.perm);
         memcpy((void*)newpage, (void*)vam.pa, PAGESIZE);
     }
+
+    return 1;
 }
 
 int fork(void) {
@@ -365,7 +401,20 @@ int fork(void) {
     // Exercise 5: your code here
 
     processes[pid].p_pagetable = copy_pagetable(current->p_pagetable, pid);
-    copy_writable_page(PROC_START_ADDR, MEMSIZE_VIRTUAL, pid, current->p_pid);
+    if(processes[pid].p_pagetable == (x86_pagetable*)-1)
+    {
+        release_pagetable( pid, (x86_pagetable*)PTE_ADDR(processes[pid].p_pagetable->entry[0]) );
+        release_page(pid, (uintptr_t)processes[pid].p_pagetable);
+        return -1;
+    }
+
+    int r = copy_writable_page(PROC_START_ADDR, MEMSIZE_VIRTUAL, pid, current->p_pid);
+    if(r == -1)
+    {
+        release_pagetable( pid, (x86_pagetable*)PTE_ADDR(processes[pid].p_pagetable->entry[0]) );
+        release_page(pid, (uintptr_t)processes[pid].p_pagetable);
+        return -1;
+    }
 
     processes[pid].p_registers = current->p_registers;
     processes[pid].p_registers.reg_eax = 0;
