@@ -330,6 +330,20 @@ void exception(x86_registers* reg) {
 }
 
 
+void copy_writable_page(uintptr_t va_begin, uintptr_t va_end, pid_t newpid, pid_t oldpid)
+{
+    uintptr_t va;
+    for(va = va_begin; va < va_end; va += PAGESIZE)
+    {
+        vamapping vam = virtual_memory_lookup(processes[oldpid].p_pagetable, va);
+        if((vam.perm & (PTE_P | PTE_W)) == 0) continue;
+
+        uintptr_t newpage = find_free_physic_page(newpid);
+        virtual_memory_map(processes[newpid].p_pagetable, va, newpage, PAGESIZE, vam.perm);
+        memcpy((void*)newpage, (void*)vam.pa, PAGESIZE);
+    }
+}
+
 int fork(void) {
     pid_t pid;
     for (pid = 1; pid < NPROC && processes[pid].p_state != P_FREE; ++pid)
@@ -338,6 +352,9 @@ int fork(void) {
         return -1;
 
     // Exercise 5: your code here
+
+    processes[pid].p_pagetable = copy_pagetable(current->p_pagetable, pid);
+    copy_writable_page(PROC_START_ADDR, MEMSIZE_VIRTUAL, pid, current->p_pid);
 
     processes[pid].p_registers = current->p_registers;
     processes[pid].p_registers.reg_eax = 0;
