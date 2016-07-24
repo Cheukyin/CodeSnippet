@@ -348,6 +348,7 @@ namespace CYTL
 
     // --------------------------------------
     // GenScatterHierarchy
+    #pragma pack(1)
     template<class L, template<class> class Holder, int N=0> struct GenScatterHierarchy;
     template<template<class> class Holder, int N> struct GenScatterHierarchy<TypeList<>, Holder, N> {};
     template<class AtomicType, template<class> class Holder, int N>
@@ -435,6 +436,7 @@ namespace CYTL
         using RT = typename _FieldHelper<GenLinearHierarchy<TypeList<T...>, Holder, Root>, N>::type;
         return static_cast<RT&>(obj);
     }
+    #pragma pack()
 
 
     // ---------------------------------------

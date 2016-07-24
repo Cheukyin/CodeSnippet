@@ -261,6 +261,9 @@ TEST_CASE(Tuple)
 
     CYTL::Field<3>(tuple) = "UI";
     EXPECT_EQ(CYTL::Field<3>(tuple), "UI");
+
+    EXPECT_EQ(sizeof(tuple),
+              sizeof(int)+sizeof(char)+sizeof(int)+sizeof(std::string)+sizeof(double)+sizeof(std::string));
 }
 
 namespace
