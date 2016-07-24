@@ -1,0 +1,73 @@
+.required, .challenge, .question {
+  padding: .5em .5em .5em .5em;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  background: #e0e0ff;
+  border: 2px dotted silver;
+}
+
+.honors {
+  padding: .5em .5em .5em .5em;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  background: #fff8e0;
+  border: 2px dotted silver;
+}
+
+
+/*
+div.required, div.challenge, div.question {
+  padding: .5em .5em .5em .5em;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  background-color: #e0e0ff;
+  border: 2px dotted silver; 
+  padding-top: 0px;
+  padding-bottom: 0px;
+*/
+
+/*
+    margin-left: 2em;
+    margin-right: 2em;
+    margin-left: auto; 
+    margin-right: auto; 
+    width: 80%; 
+    background-color: #e0e0ff;
+    border: 4px double black;
+    padding-left: 5px; 
+    padding-right: 5px; 
+*/
+
+div.required .header {
+    font-weight: bold;
+}
+
+p.required .header {
+    font-weight: bold;
+}
+
+
+div.challenge .header {
+    font-style: italic;
+}
+
+
+div.challenge {
+    background-color: #ffe0e0;
+}
+
+kbd {
+  color: #007700;
+  font-family: monospace;
+  font-weight: bold;
+}
+
+ul.spaced {
+          margin: 0px 0px 2em 0px;
+}
+ul.spaced > li {
+   margin: .5em 0px;
+}

@@ -1,0 +1,1008 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!-- saved from url=(0060)https://www.cs.nyu.edu/~mwalfish/classes/15sp/labs/lab1.html -->
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en" data-minimalscrollbar="yes"><style>html::-webkit-scrollbar{display:none !important}body::-webkit-scrollbar{display:none !important}</style><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>CSCI-UA.0202 Spring 2015 Lab 1: C review, WeensyOS MiniprocOS, 
+git tutorial</title>
+<link rel="stylesheet" type="text/css" href="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/style.css">
+<link rel="stylesheet" type="text/css" href="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/labs.css">
+<meta http-equiv="Content-Script-Type" content="text/javascript">
+<script type="text/javascript" src="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/util.js">
+</script>
+</head>
+<body>
+<h1>CSCI-UA.0202 Spring 2015 Lab 1: C review, WeensyOS MiniprocOS, 
+git tutorial</h1>
+<div id="topnavbar">
+<ul class="topnavlist">
+<li><a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/index.html">Home</a></li>
+<li><a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/syllabus.html">Schedule</a></li>
+<li><a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/policies.html">Policies and grading</a></li>
+<li><a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/labs.html">Labs</a></li>
+<!--<li><a href="../exams.html">Exams</a></li>-->
+<!--<li><a href="../tools.html">Tools</a></li>-->
+<li><a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/reference.html">Reference materials</a></li>
+<li><a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/announcements.html">Announcements</a></li>
+</ul>
+</div>
+
+
+
+<p>
+<b>Handed out Thursday, January 29, 2015<br>
+Due 9:00 PM, Friday, February 6, 2015</b>
+
+</p><h1>Lab 1: Setup and C review, WeensyOS MiniprocOS, git</h1>
+
+<h2 id="introduction">Introduction</h2>
+
+<p>This lab is split into three parts. In the first part, you will get your
+development environment set up, and quickly review C pointers. In the second
+part, you will do the heart of this lab: a small coding exercise (WeensyOS, 
+written by <a href="http://read.seas.harvard.edu/~kohler/">Eddie Kohler</a>) in which you
+manipulate processes (you will implement a basic <tt>fork</tt> call!). The
+third part gives an introduction to Git, a version control system that you will
+use this semester to manage your work.</p>
+
+<p>This lab does not require you to write much code. So take time to understand
+the code, tools, and environment that you have been given; you will need to be
+fluent in these things in order to be productive this semester.</p>
+
+<p>You will electronically hand in code and answers (the mechanics are
+described at the end of the lab; <a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/labs/lab1.html#handin">sneak preview</a>). You will hand in responses to numbered
+exercises. Do your work in the code files themselves and in a file called
+<code>answers.txt</code> (your answers must be in this file in text; a blank
+<tt>answers.txt</tt> will receive no credit).
+
+</p><p><b>Please note the following expectation,</b> which we will have throughout
+the semester. <i>You must comment every block of code that you write</i>, and you will be
+graded on these comments. As a rough guideline, figure that you need a
+one-sentence comment every four lines or so.  In these comments, you must
+explain the <i>purpose</i> of the code, rather than narrating the instruction
+that you gave to the computer. Examples of not-good comments are, "assign
+variable X to variable Y", "dereference pointer P", or "the following code is a
+for loop that iterates over the foo structure." An example of a better comment
+would be, "Initialize the frobnitz data structure." To be clear: in the real
+world, it is terrible style to comment code that is obvious or
+self-documenting. Why are we departing from that? Because, this being a
+class, we want to make sure
+that you understand and can explain your code.</p>
+
+<p>As an exception, the preceding expectation does not apply to the exercises
+in part 1 below.</p>
+
+<h2>Part 1: Getting started, C review</h2>
+
+<h3>Set up your development environment</h3>
+
+You will perform the labs on one of two platforms: a virtual <i>devbox</i> (a
+machine with all of the required development software installed on it), or the
+machines provided to us by CIMS (The Courant Institute). It's time for you to
+set up that platform:
+
+<p class="required"> Go to the <a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/setuptools.html">setup page</a>, and follow the instructions there.
+Come back here when that step is complete.</p>
+
+<h3>Get the code</h3>
+
+<p>The files that you will need for this and subsequent lab assignments in this
+course are distributed using the <a href="http://www.git-scm.com/">Git</a>
+version control system. We will learn a bit more about Git at the end of this lab.
+</p>
+
+<p>
+The URL for the course Git repository is
+<a href="http://www.cs.nyu.edu/~mwalfish/classes/15sp/cs202-labs.git">http://www.cs.nyu.edu/~mwalfish/classes/15sp/cs202-labs.git</a>
+</p>
+
+<p class="required">To get the labs, go into your development environment (the devbox or the CIMS machines) and run the commands below (the lines preceded with '#' are comments):
+</p>
+
+<pre>$ <kbd>mkdir ~/cs202</kbd>
+$ <kbd>cd ~/cs202</kbd>
+# You must execute the line below; NOT doing so violates the course policies
+$ <kbd>chmod 0700 .</kbd> 
+# The 'dot' at the end of the next line tells git not to add another 
+# layer in the directory hierarchy: the clone will be into the current directory
+$ <kbd>git clone http://www.cs.nyu.edu/~mwalfish/classes/15sp/cs202-labs.git .</kbd> 
+Cloning into ....
+$ 
+</pre>
+
+<p>
+Git allows you to keep track of the changes you make to the code.
+For example, if you are finished with one of the exercises, and want
+to checkpoint your progress, you can <i>commit</i> your changes
+by running:
+</p>
+<pre>$ <kbd>git commit -am 'my solution for lab1 exercise1'</kbd>
+Created commit 60d2135: my solution for lab1 exercise1
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+$ 
+</pre>
+
+<p>
+You can keep track of your changes by using the <kbd>git diff</kbd> command.
+Running <kbd>git diff</kbd> will display the changes to your code since your
+last commit, and <kbd>git diff origin/lab1</kbd> will display the changes
+relative to the initial code supplied for this lab.
+Here, <tt>origin/lab1</tt> is the name of the git branch with the
+initial code you downloaded from our server for this assignment.
+</p>
+
+<h3>Review of C pointers</h3>
+
+<p>
+All of the projects in this class will be done in C or C++, for
+two main reasons. First, some of the things that we want to implement
+require direct manipulation of hardware state and memory, which are
+operations that are naturally expressed in C.
+Second, C and C++ are widely used languages, so learning them
+is a useful thing to do in its own right. While you have
+some experience in C from CS201, you will probably need greater comfort
+and familiarity here than was required there. 
+You will truly need to "think in C."
+</p>
+
+<p class="note">
+If you are interested in why C looks like it does, we encourage
+you to look at Ritchie's <a href="http://cm.bell-labs.com/cm/cs/who/dmr/chist.html">history</a>.
+Here, perhaps, is the key quotation: "Despite some aspects mysterious
+to the beginner and occasionally even to the adept, C remains a
+simple and small language, translatable with simple and small
+compilers.  Its types and operations are well-grounded in those
+provided by real machines, and for people used to how computers
+work, learning the idioms for generating time- and
+space-efficient programs is not difficult. At the same time the
+language is sufficiently abstracted from machine details that
+program portability can be achieved."
+</p>
+
+<p>You will do four short exercises in C, as a warmup. From your <tt>cs202</tt>
+directory:</p>
+
+<pre>$ <kbd>cd lab1/review-pointers</kbd>
+</pre>
+
+<p class="required">
+<span class="header">Exercise 1.</span>
+Implement the function <tt>set_to_five</tt> in <tt>ex1.c</tt>.
+</p>
+
+<p>
+For Exercises 1 through 4, you can test with:
+</p><pre>$ <kbd>make</kbd>
+</pre>
+Later in the lab, we will revisit the program <tt>make</tt>. For now,
+think of it as an automatic way to invoke the compiler, and link your
+compiled code to a small test harness that we provide.
+Now invoke <tt>ex1</tt>:
+<pre>$ <kbd>./build/ex1</kbd>
+ex1: OK
+</pre>
+If your ex1.c is correctly implemented, you will see OK, as above.
+
+<p class="required">
+<span class="header">Exercise 2.</span>
+Implement the function <tt>swap</tt> in <tt>ex2.c</tt>.
+</p>
+
+<p>
+You will need to remove
+the <tt>assert(0);</tt> line.  Remove this wherever you see it as you
+implement functions in future exercises; it is a reminder
+that you have yet to implement a particular function.
+</p>
+
+
+<p>As above, you compile and test with:
+</p><pre>$ <kbd>make</kbd>
+</pre>
+Now you should see
+<pre>$ <kbd>./build/ex2</kbd>
+ex2: OK
+</pre>
+<p></p>
+
+<p>
+The <tt>assert</tt> line you saw in the previous exercise is a simple
+application of a powerful tool.  In C, an <tt>assert</tt> is a
+<i>preprocessor macro</i> which effectively enforces a contract in the program.
+(You can read more about macros in C
+<a href="http://gcc.gnu.org/onlinedocs/cpp/Macros.html">here</a>.)
+The contract that <tt>assert</tt> enforces is
+simple: when program execution reaches <tt>assert(&lt;condition&gt;)</tt>,
+if <tt>condition</tt> is true, execution continues; otherwise,
+the program aborts with an error message.
+</p>
+
+<p>
+Assertions, when used properly, are powerful because they allow the
+programmer who uses them to guarantee that certain assumptions about
+his or her code hold.  For example, in the <tt>swap</tt> function that you just
+implemented, there are two assertions at the beginning of the function,
+before where your code should have been placed:
+</p><pre>void
+swap(int *p1, int *p2)
+{
+        assert(p1 != NULL);
+        assert(p2 != NULL);
+
+	...
+}
+</pre>
+These two assertions combined enforce the contract that neither of
+the parameters <tt>p1</tt> or <tt>p2</tt> can be <tt>NULL</tt>.  If
+these assertions were not present and either
+of these passed parameters were <tt>NULL</tt>, if we tried to swap them, we
+would encounter a type of error called a <i>segmentation violation</i>
+(or <i>segmentation fault</i>).  This is because dereferencing the
+<tt>NULL</tt> address is
+invalid; <tt>NULL</tt> points to "nothing".  By using assertions, we
+guarantee that <tt>swap</tt> will never try to swap the value of a
+variable at <tt>NULL</tt>, saving us the headache of having to debug
+a segmentation fault if some code tried to pass <tt>swap</tt> a <tt>NULL</tt> value.
+Instead, we will get a handy error message describing exactly what contract
+of the function was invalidated.
+<p></p>
+
+<!--
+<p>
+Your code for exercise 2 could not pass before you removed the
+<tt>assert(0);</tt> line because 0 is the &quot;false&quot; value in C.
+Thus, the contract of this assert was &quot;if false is true, then
+proceed; otherwise, abort&quot;.  This condition obviously cannot ever
+hold, so the program would always abort when run.
+</p>
+-->
+
+<p class="required">
+<span class="header">Exercise 3.</span>
+Implement the function <tt>array_sum</tt> in <tt>ex3.c</tt>.
+</p>
+<p>Test it:
+</p><pre>$ <kbd>make</kbd>
+gcc -m32 -g -c ex3.c -o build/ex3.o
+gcc -m32 static/part3_harness.o build/ex3.o -lm -o build/ex3
+$ <kbd>./build/ex3</kbd>
+ex3: OK
+</pre>
+<p>Again, you should see "OK".</p>
+
+<div class="required">
+<span class="header">Exercise 4.</span>
+Implement the <tt>set_point</tt> and <tt>point_dist</tt>
+functions in <tt>ex4.c</tt>.
+<p></p>
+ Look in <tt>ex4.h</tt> for the definition of <tt>struct point</tt>,
+which represents a point in a two-dimensional plane.
+</div>
+
+<p>Test it:
+</p><pre>$ <kbd>make</kbd>
+gcc -m32 -g -c ex4.c -o build/ex4.o
+gcc -m32 static/part4_harness.o build/ex4.o -lm -o build/ex4
+$ <kbd>./build/ex4</kbd>
+set_point ok
+point_dist ok
+</pre>
+If you implemented ex4.c correctly, you will see the printout above.
+
+<h2>Part 2: WeensyOS assignment: MiniprocOS</h2>
+
+<p>The heart of this lab is the first WeensyOS.
+WeensyOS refers
+to a series of small coding assignments that are also complete operating
+systems. 
+You could boot a WeensyOS operating system on real x86-compatible hardware!
+The purpose of the WeensyOS assignments is first, to teach some of the
+class's concepts through example, and second, to demystify
+operating systems in general.</p>
+
+<p>WeensyOS was developed by <a href="http://read.seas.harvard.edu/~kohler/">Eddie Kohler</a>; the code
+that we use, and the description below (narrative, exercises, etc.),
+is borrowed from him.
+One of his goals in developing these labs was to make them fun. We think
+he succeeded!</p>
+
+<p>The first WeensyOS problem set is called MiniprocOS, and it concerns
+<i>processes</i>.
+
+MiniprocOS is a tiny operating system that supports the major process
+primitives: creating a new process with <code>fork</code>, exiting a
+process, and waiting on a process that has exited.
+
+The only thing missing -- and it's a big one -- is process isolation:
+MiniprocOS processes actually share a single address space. (In a later
+WeensyOS assignment you will implement process isolation for memory.)
+
+In this assignment, you will actually implement the code that forks a
+new process, and see how system calls are implemented. 
+
+You will also update the code that waits on an exited process to avoid busy
+waiting.</p>
+
+<h3>x86 emulator and other tools</h3>
+
+<p>You could take the disk image file built in this assignment, write it
+to your laptop's hard drive, and boot up your operating system directly if
+you wanted!
+
+However, it's much easier to work with a <i>virtual</i> machine or <i>PC
+emulator</i>.</p>
+
+<p>An emulator mimics, or <i>emulates</i>, the behavior of a full hardware
+platform.
+
+A PC emulator acts like a Pentium-class PC: it emulates the
+execution of Intel x86 instructions and the behavior of other PC
+hardware.  For example, it can treat a normal file in your home directory
+as an emulated hard disk; when the program inside the emulator reads a
+sector from the disk, the emulator simply reads 512 bytes from the file.
+
+PC emulators are slower than real hardware, since they do all of the
+regular CPU's job in software -- not to mention the disk controller's job,
+the console's job, and so forth. 
+
+However, debugging with an emulator is a whole lot friendlier, and you
+can't screw up your machine!</p>
+
+<p>We will be using the <a href="http://wiki.qemu.org/Index.html">QEMU</a>
+emulator.
+
+We will also be using a C compiler (gcc), configured to compile code 
+for an x86 ELF
+target.
+
+(ELF, or Executable and Linkable Format, is a particular format for storing
+machine language programs on disk.)
+
+All of the required tools are installed on our two lab platforms (the
+virtual devbox or the CIMS machines), which you set up above.</p>
+
+<p class="note">Note that if you are using the virtual devbox option,
+then you are using an additional layer of emulation to run the devbox
+itself (in that Ubuntu Linux is made to "run" on your own laptop or
+desktop). You are probably using Virtual Box for this purpose. Note that
+Virtual Box is solving almost the same problem that QEMU is. This is
+explained further on our <a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/setuptools.html#virtualdevbox">setup
+page</a>.
+
+</p><h3>Browsing MiniprocOS</h3>
+
+<p>You fetched the source at the beginning of the lab. Look over the
+source:
+
+</p><pre class="samp">
+# this assumes we were in the review-pointers directory
+$ <kbd>cd ..</kbd>
+# now we are in the lab1 directory
+
+$ <span class="type"><kbd>ls lab1<kbd></kbd></kbd></span>
+answers.txt  conf       GNUmakefile  k-loader.c  mergedep.pl      process.h        x86.c
+boot.c       const.h    kernel.c     lib.c       p-procos-app2.c  review-pointers  x86.h
+bootstart.S  COPYRIGHT  kernel.h     lib.h       p-procos-app3.c  submit.py
+build        elf.h      k-int.S      link        p-procos-app.c   types.h
+$
+</pre>
+
+Now it's time to give the OS a whirl.
+
+<p class="required"> Change into the <tt>lab1</tt> directory 
+and run the <tt class="type">make</tt> program (which must be GNU make).</p>
+
+<p><tt>make</tt>, if you haven't heard of it, is a program that
+simplifies the process of building
+software projects.
+
+The user writes a set of rules, called a <i>Makefile</i> (ours is called
+<tt>GNUmakefile</tt>) that tells the
+<tt>make</tt> program what to build.
+
+For example, a Makefile might say, "to compile a C program, run the
+<tt>gcc</tt> compiler; and by the way, I want to compile the program named
+<tt>hello</tt>, which depends on the C source file <tt>hello.c</tt>".
+
+Makefiles can be quite simple, although most medium-to-large projects have
+complex Makefiles.
+
+You'll be invoking a couple of Makefiles in the labs.</p> 
+
+<p>The WeensyOS <tt>GNUmakefile</tt> builds a hard disk
+image called <tt>procos.img</tt>, which contains the MiniprocOS "kernel"
+and two applications, <tt>p-procos-app.c</tt> and <tt>p-procos-app2.c</tt>.</p>
+
+<p>Make's output should look something like this:</p>
+
+<pre class="samp">$ <span class="type">make</span>
+  HOSTCOMPILE build/mkbootdisk.c
+  ASSEMBLE bootstart.S
+  COMPILE boot.c
+  LINK obj/bootsector
+  ASSEMBLE k-int.S
+  COMPILE kernel.c
+  COMPILE x86.c
+  COMPILE k-loader.c
+  COMPILE lib.c
+  COMPILE p-procos-app2.c
+  LINK obj/p-procos-app2
+  COMPILE p-procos-app3.c
+  LINK obj/p-procos-app3
+  COMPILE p-procos-app.c
+  LINK obj/p-procos-app
+  LINK obj/kernel
+  CREATE procos.img
+$
+</pre>
+
+<p>Now that you've built the OS disk image, it's time to run it!  We've
+made it very easy to boot a given disk image; just run this command:</p>
+
+<pre class="samp">$ <span class="type">make run</span>
+</pre>
+
+<p>This will start up QEMU.  After a moment you should see a window like
+this!</p>
+
+<img src="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/fig-mpos0.gif" alt="[MiniprocOS]" align="center" border="1">
+
+<p>Hit "<code>1</code>" to try to run the first application, and you should see a window like this:</p>
+
+<img src="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/fig-mpos1.gif" alt="[MiniprocOS]" align="center" border="1">
+
+<p>To quit QEMU, type control-C in the terminal.</p>
+<!-- MW: now addressed by Eddie's patch. (Note: QEMU will
+sometimes "grab" the keyboard, which prevents you from doing anything else.
+If you appear to have lost control of your computer, check QEMU's title
+bar: it may say something like "Press Ctrl-Alt to exit grab".  Press
+Ctrl-Alt and things should return to normal.-->
+
+<h3>MiniprocOS Application</h3>
+
+<p>You're now ready to start learning about the OS code!</p>
+
+<p>Start first with the application, <tt>p-procos-app.c</tt>.  This
+application simply starts a single child process and waits for it to exit.
+It uses system calls that you saw in CS201 and that we also cover in
+this class: <tt>fork</tt> starts a new process;
+<tt>exit</tt> exits a process; and <tt>wait</tt> returns a process's exit
+status.</p>
+
+<p class="required">Read and understand the code in
+<tt>p-procos-app.c</tt>.</p>
+
+<p>How are those system calls implemented?
+
+As you saw in CS201 (and as we will review in this class): to make a
+system call, the application program executes a <i>trap</i>: an
+instruction that initiates a protected control transfer to the kernel.
+
+The system call's arguments are often stored in machine registers, and
+that's how MiniprocOS does it.
+
+Likewise, the system call's results are often returned in a machine
+register.
+
+On Intel 80386-compatible machines (colloquially called "x86es"), the
+interrupt instruction is called <code>int</code>, and registers have names
+like <code>%eax</code>, <code>%ebx</code>, and so forth.
+
+A special C language statement, called <code>asm</code>, can execute the
+interrupt instruction and connect register values with C-language
+variables.</p>
+
+<p class="required">Read and understand the comments in
+<tt>process.h</tt>.
+
+This file defines MiniprocOS's system calls.
+
+Also glance through the code, to see how system calls actually work!</p>
+
+<p>The MiniprocOS <i>kernel</i> handles these system calls.</p>
+
+<p class="note">
+
+This kernel is different from conventional operating system kernels in
+several ways, mostly to keep the kernel as small as possible.
+
+For one thing, the kernel shares an address space with user applications,
+so that user applications could write over the kernel if they wanted to.
+
+This isn't very <i>robust</i>, since the kernel is not isolated from user
+faults, but for now it is easier to keep everything in the same address
+space.
+
+Another difference is that MiniprocOS implements <i>cooperative
+multitasking</i>, rather than <i>preemptive multitasking</i>.
+
+That is, processes give up control <i>voluntarily</i>, and if a process went
+into an infinite loop, the machine would entirely stop.
+
+In preemptive multitasking, the kernel can <em>preempt</em> an
+uncooperative process, which forces it to give up control.
+
+Preemptive multitasking is more robust than cooperative multitasking,
+meaning it's more resilient to errors, but it is slightly more complex.
+All modern PC-class operating systems use preemptive multitasking for
+user-level applications, but the kernel itself usually switches between
+internal tasks using cooperative multitasking.</p>
+
+<p>MiniprocOS's main kernel structures are as follows.</p>
+
+<dl>
+
+<dt><b><code>struct process_t</code></b></dt>
+<dd>This is the <i>process descriptor</i> structure, which stores all the
+relevant information for each process.  It is defined in
+<tt>kernel.h</tt>.</dd>
+
+<dt><b><code>process_t proc_array[];</code></b></dt>
+<dd>This is an array of process descriptor structures, one for each possible
+process.  MiniprocOS supports up to 15 concurrent processes, with process IDs 1
+to 15.  The process descriptor for process <i><code>I</code></i> is stored in
+<code>proc_array[<i>I</i>]</code>.  Initially, only one of these processes is
+active, namely <code>proc_array[1]</code>.  The <code>proc_array[0]</code> entry
+is never used.</dd>
+
+<dt><b><code>process_t *current;</code></b></dt>
+<dd>This points to the process descriptor for the currently running
+process.</dd>
+
+</dl>
+
+<p>The code in <tt>kernel.c</tt> sets up these structures.  In
+particular, the <code>start()</code> function initializes all the process
+descriptors.</p>
+
+<p class="required">Read and understand the code and comments in
+<tt>kernel.h</tt>.  Then read and understand the memory map in
+<tt>kernel.c</tt>, the picture at the top that explains how MiniprocOS's
+memory is laid out.  Then look at <code>start()</code>.</p>
+
+
+<p>The code you'll be changing in MiniprocOS is the function that responds to
+system calls.  This function is called <code>interrupt()</code>.</p>
+
+<p class="required">Read and understand the code for
+<code>interrupt()</code> in <tt>kernel.c</tt>.  Concentrate on the
+simplest system call, namely <code>sys_getpid/INT_SYS_GETPID</code>.
+Understand how the <code>sys_getpid</code> application function (in
+<tt>process.h</tt>) and the <code>INT_SYS_GETPID</code> clause in
+<code>interrupt()</code> (in <tt>kernel.c</tt>) interact.</p>
+
+
+<p class="required"><b>Exercise 5.</b> Answer the following question (in <code>answers.txt</code>): Say
+you replaced <code>run(current)</code> in the
+<code>INT_SYS_GETPID</code> clause with <code>schedule()</code>.
+The process that called <code>sys_getpid()</code> will eventually run
+again, picking up its execution as if <code>sys_getpid()</code> had returned
+directly.  When it does run, will the <code>sys_getpid()</code> call have
+returned the correct value? Why or why not?</p>
+
+
+<p>You may have noticed, though, that the <code>sys_fork()</code>
+system call isn't working!  Your job is to write the code that actually
+creates a new process.</p>
+
+
+<p class="required"><b>Exercise 6.</b> Fill out the <code>do_fork()</code>
+and <code>copy_stack()</code> functions in <tt>kernel.c</tt>.</p>
+
+<p>Congratulations, you've written code to create a process -- it's not
+that hard, no?  (Our version is less than 20 lines of code.)  Here's what
+you should see when you're done:</p>
+
+
+<img src="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/fig-mpos2.gif" alt="[MiniprocOS after Exercise 2]" align="center">
+
+<p>Now take a look at the code in <code>p-procos-app.c</code> that calls
+<code>sys_wait()</code>.  Also look at the <code>INT_SYS_WAIT</code>
+implementation in <code>kernel.c</code>.  The current system call design
+uses a <em>polling</em> approach: to wait for process 2 to exit, a process
+must call <code>sys_wait(2)</code> over and over again until process 2
+exits and the <code>sys_wait(2)</code> system call returns a value
+different from <code>WAIT_TRYAGAIN</code>.</p>
+
+<p>We'll see more about polling later in the semester, but for now, notice
+that polling approaches like this often reduce <em>utilization</em>.  A
+process uses CPU time to call <code>sys_wait(2)</code> over and over again,
+leaving less CPU time for others.  An alternative approach, which can
+improve utilization, is called <em>blocking</em>.  A blocking
+implementation would put <code>sys_wait(2)</code>'s caller to sleep, then
+wake it up once process 2 had exited and a real exit status was available.
+The sleeping process doesn't use any CPU.  A process that is asleep because
+the kernel is waiting for some event is called <em>blocked</em>.</p>
+
+<div class="required">
+<b>Exercise 7.</b> Change the implementation of
+<code>INT_SYS_WAIT</code> in <code>kernel.c</code> to use blocking
+instead of polling.  In particular, when the caller tries to wait on a
+process that has not yet exited, that process should block until the
+process actually exits.
+
+<p></p>
+
+<strong>Important Hint:</strong> Make sure that your blocking version of
+<code>sys_wait()</code> has <em>exactly the same</em> user-visible behavior
+as the original version, except that it blocks and so never returns
+<code>-2</code>.  See <code>process.h</code> for an English description of
+the current behavior.
+</div>
+
+<p>To implement Exercise 7, you will probably want to add a field to the
+process descriptor structure.
+
+This field will indicate whether or not a process is waiting on another
+process.
+
+You will change <code>INT_SYS_WAIT</code> to add the calling process to
+this "wait queue", and <code>INT_SYS_EXIT</code> to wake any processes
+that were on the "wait queue".
+
+There are several ways to do this; describe how you did it in
+<tt>answers.txt</tt>.</p>
+
+<p>To check your work, try changing the <code>sys_wait()</code> loop in
+<code>p-procos-app.c</code> to look like this:
+
+</p><pre class="samp">		do {
+			status = sys_wait(p);
+			<strong>app_printf("W");</strong>
+		} while (status == WAIT_TRYAGAIN);
+</pre>
+
+<p>A polling implementation of <code>sys_wait</code> would produce output
+like this:</p>
+
+<img src="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/fig-mpos2a.gif" alt="[MiniprocOS 2 before Exercise 7]" align="center">
+
+<p>You want it to produce output like this:</p>
+
+<img src="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/fig-mpos2b.gif" alt="[MiniprocOS 2 after Exercise 7]" align="center">
+
+
+<h3>Cleaning Up Processes</h3>
+
+<p>Now try running the other MiniprocOS application.  You should see
+something like this (different processes generally print their lines in
+different colors):</p>
+
+
+<img src="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/fig-mpos3.gif" alt="[MiniprocOS 2 after Exercise 7]" align="center">
+
+
+<p>The MiniprocOS2 application, in <code>p-procos-app2.c</code>, tries to run
+1024 child processes.</p>
+
+<p class="required">Read and understand <code>p-procos-app2.c</code>.</p>
+
+<p>Unfortunately, your current kernel code doesn't seem able to run more
+than 15 total processes, ever!
+
+It looks like old, dead processes aren't being cleaned up, even after we call
+<code>sys_wait()</code> on them.
+
+This is what we call a bug.</p>
+
+
+<p class="required"><b>Exercise 8.</b> Find and fix this bug.</p>
+
+
+<p>When you've completed this exercise, the application should count up to
+1024, like this:</p>
+
+
+<img src="./CSCI-UA.0202 Spring 2015 Lab 1_ C review, WeensyOS MiniprocOS, git tutorial_files/fig-mpos4.gif" alt="[MiniprocOS 2 after Exercise 8]" align="center">
+
+
+<p>Your colors may differ, however, depending on how you implement
+<code>sys_wait()</code>.  One common implementation strategy ends with
+several red lines in a row.  If you see this in your code, try to figure
+out why!</p>
+
+<div class="honors">
+<b>Honors supplement.</b> Honors students (section 001) should choose ONE of the
+following two exercises; students in section 002 are free (even encouraged) to do the
+exercises, but there will be no credit given:
+
+<p><b>Exercise 9 (Honors).</b> MiniprocOS
+miniprocesses have some aspects of threads.  For instance, like threads,
+they all share a single address space.  A big difference from threads is
+that we create a new process by forking.  New threads are created in a
+different way.  Introduce a new system call,
+
+</p><pre class="samp">pid_t sys_newthread(void (*start_function)(void));
+</pre>
+
+that creates a new process in a thread-like way.  The new process should
+start with an <em>empty</em> stack, not a copy of the current stack.
+Rather than starting at the same instruction as the parent, the new thread
+should start by executing the <code>start_function</code> function: that
+is, that function's address becomes the new thread's instruction
+pointer.<p></p>
+
+<p></p>
+
+<b>Exercise 10 (Honors).</b> Introduce a
+<code>sys_kill(<i>pid</i>)</code> system call by which one process can make
+another process exit.  Use this system call to alter <tt>p-procos-app2.c</tt>'s
+<code>run_child()</code> function so that the even-numbered processes kill
+off all odd-numbered processes (except for thread 1).  Running the
+application should print out "<tt>Process N lives</tt>" messages only for
+even-numbered values of <tt>N</tt>.
+</div>
+
+<p><b>Extra credit.</b> For extra credit (honors or regular), do the
+following exercise.</p>
+
+<div class="required"><b>Exercise 11 (Extra-credit).</b> Our version of
+<code>sys_fork()</code>, with its dirt simple stack copying strategy, works
+only for simple programs.  For example, consider the following function
+definition:
+
+<pre class="samp">void pmain(void) {
+        int x = 0;  /* note that local variable x lives on the stack */
+        /* YOUR CODE HERE */
+        pid_t p = sys_fork();
+        if (p == 0)
+                /* YOUR CODE HERE */;
+        else if (p &gt; 0)
+                sys_wait(p); // assume blocking implementation
+        app_printf("%d", x);
+        sys_exit(0);
+}
+</pre>
+
+In a system with true process isolation, the child process's <code>x</code>
+and the parent process's <code>x</code> would be different variables, and
+changes in one process would not affect the other's <code>x</code>.  But in
+MiniprocOS, this is not always the case!  For this exercise, produce a
+version of that code with the following properties:
+
+<ol>
+<li>The code uses only local variables.</li>
+<li>In a system with correct process isolation, the code would print
+"<code>10</code>".</li>
+<li>In MiniprocOS, the code would print "<code>11</code>".</li>
+</ol>
+
+<strong>Hint:</strong> It isn't easy to get this to work because the
+compiler tends to optimize away important assignment statements or shift
+them to unfortunate places.  Mark a variable as <code>volatile</code> to
+tell the compiler not to optimize references to it.  Doing this correctly
+is tricky, but if you can understand the difference between <code>volatile
+int *x</code> and <code>int * volatile x</code> you can do this problem.
+</div>
+
+
+<p><b>This completes the WeensyOS portion of this lab.</b> At this
+point, you should <i>commit</i> your work:
+
+</p><pre># see what files you changed
+$ <kbd>git status</kbd>
+
+# examine your changes
+$ <kbd>git diff</kbd>
+
+$ <kbd>git commit -am "My solutions to lab1"</kbd>
+</pre>
+The next (final) part of the lab will shed some light on what the
+commands above are actually doing.<p></p>
+
+<div class="note">
+When you try to commit for the first time, you may see an error message:
+<pre>Your name and email address were configured automatically based
+on your username and hostname. Please check that they are accurate.
+You can suppress this message by setting them explicitly:
+
+    git config --global user.name "Your Name"
+    git config --global user.email you@example.com
+...
+</pre>
+This happens because you have not configured git, and it cannot figure
+out your name and email address (required by default for creating a
+commit). Type the following:
+<pre>$ <kbd>git config --global user.name "&lt;your_name&gt;" </kbd>
+$ <kbd>git config --global user.email &lt;your_email_address&gt; </kbd>
+</pre>
+and then re-run the <code>git commit</code> command above.
+</div>
+
+
+<h2>Part 3: Using Git</h2>
+
+<p>This course will
+use <a href="http://git-scm.com/">Git</a> to distribute code for all
+programming assignments. Git is a distributed (as opposed to centralized)
+version control system. If used correctly, it can be very useful for
+tracking your work, undoing mistakes, trying different approaches,
+etc.</p>
+
+<p class="required">
+Read <a href="http://cs61.seas.harvard.edu/wiki/2014/Git">Eddie Kohler's excellent
+introduction to git</a>. Where this page mentions
+<tt>code.seas.harvard.edu</tt>, read that as
+<tt>cs.nyu.edu</tt> (where you cloned from, above); where it mentions "the CS50 appliance", read that 
+as our lab platform (the devbox or your CIMS account).
+</p>
+
+<p>Note that life with git will be far easier at first if you use a
+graphical browser. <a href="http://www.kernel.org/pub/software/scm/git/docs/gitk.html">
+Gitk</a> is a good one that is installed on the lab platform.  Just type
+<kbd>gitk</kbd> while you are in a git repo (if you haven't heard the
+term "repo" before, it's short for "repository"; we and many others
+sometimes use this abbreviation).</p>
+
+<p>Last, note that our <a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/reference.html#Git">reference
+page</a> has tutorials and references on git.</p>
+<p></p>
+
+Other git commands that may ultimately come in handy (if not in this
+class than in later projects) are <code>git stash</code> (type <code>man
+git-stash</code> to learn about it), <code>git rebase</code> (ditto:
+<code>man git-rebase</code>), and <code>git-cherry-pick</code>.
+
+<p>
+We have prepared a couple of very brief exercises using git.
+ First, go to your <code>cs202/</code> directory. Now, type:
+</p>
+
+<pre>$ <kbd>git checkout -b git-lab/mergeA origin/git-lab/mergeA</kbd>
+</pre>
+
+<p>
+This will create a new branch named <tt>git-lab/mergeA</tt>. This branch
+should only have a single file called <tt>merge.c</tt>. Type <kbd>ls</kbd>
+to verify. This is a simple program that simply prints three characters
+to the screen. (Note: You may see other files besides <tt>merge.c</tt>,
+if you created them but did not check them into your <tt>lab1</tt> branch. These
+files are not tracked by git, so they persist across checkouts).
+You may compile and run this program by typing:
+</p>
+
+<pre>$ <kbd>make merge</kbd>   # To compile
+$ <kbd>./merge</kbd>      
+</pre>
+
+<p class="required"><span class="header">Exercise 12.</span>
+(This goes in <tt>answers.txt</tt>.) What is the name of the first commit to the tree in which this branch
+resides? (Hint: This is much easier if you use a git browser.
+An example is <tt>gitk</tt>, which is installed on our lab platform.)
+</p>
+
+<p>
+Now we will create another branch called <tt>git-lab/mergeB</tt>. Type:
+</p>
+
+<pre>$ <kbd>git checkout -b git-lab/mergeB origin/git-lab/mergeB</kbd>
+</pre>
+
+<p>
+This branch also contains a single file called <tt>merge.c</tt>. Verify
+with <kbd>ls</kbd>. This program is very similar to the one you saw
+before. The only difference is that it prints out a different set of
+characters. Make sure that this is so.
+</p>
+
+<p>
+One of the strengths of git is that it allows multiple users to work
+from the same repository independently from each other. Eventually,
+though, all of the work must be merged together into a final product
+<!--(You will be doing this often as you progress through the labs).-->
+Usually, git will do this automatically for you. However, there are
+times when multiple users modify the same place in a file, in which case git
+cannot know whose work should be used (only a human can manually resolve a
+"conflict" of this kind). You will be doing such conflict resolution,
+but
+<i>here and throughout the semester, you must be careful: a botched 
+merge is a reliable source of headaches</i>. The two branches that you have
+just created have been set up so that they will cause exactly such a conflict
+when merging. Type the following into a console:
+</p>
+
+<pre>$ <kbd>git branch</kbd>
+  git-lab/mergeA
+* git-lab/mergeB
+  lab1
+$ <kbd>git merge git-lab/mergeA</kbd>
+Auto-merging merge.c
+CONFLICT (content): Merge conflict in merge.c
+Automatic merge failed; fix conflicts and then commit the results.
+</pre>
+
+<p>Now would be a good time to go back over <a href="http://cs61.seas.harvard.edu/wiki/2014/Git">Eddie Kohler's
+excellent introduction to git</a>. See especially the section on
+Conflicts; search for the word "scary".</p>
+
+<div class="required">
+<span class="header">Exercise 13.</span>
+	Find out what the base version of <tt>merge.c</tt> does, then
+	resolve the merge conflict in <tt>merge.c</tt> so that the
+	merged file behaves the same as the base version.
+	Don't forget to commit the merge
+	when you are done. Hint: Look at the common parents of the two
+	branches. <tt>gitk</tt> will be useful for this.<p></p>
+<p></p>
+	Make sure your merged <tt>merge.c</tt> compiles and runs
+	correctly.
+</div>
+
+<p class="required"><span class="header">Exercise 14.</span>
+What is the name of your commited merge? Place your answer in <tt>answers.txt</tt>.
+</p>
+
+<p>
+<b>This completes the work of the lab. The final step is handing it in.</b>
+Switch back to the <tt>lab1</tt> branch (<kbd>git checkout lab1</kbd>).
+
+</p><h2 id="handin">Handing in the lab</h2>
+
+<p>To hand in the lab, you will interact with a <i>submission server</i>
+that we are running. This requires a one-time setup, good for this and
+all labs in this course. Here are the steps:</p>
+
+<ol>
+<li> Go <a href="http://ec2-54-173-71-20.compute-1.amazonaws.com/reg">here</a>, and
+fill in your NYU NetID.</li>
+<li> Your NYU email account will receive a <i>key</i> that is associated
+with you and only you. (Do not share this key. Doing so would allow
+someone else to submit in your name, which not only exposes you to
+vandalism but also violates the course policies.)</li>
+<li> Place this key into a file in your <tt>cs202</tt> directory, on
+your platform (either the devbox or your account on the CIMS
+machines). Name the file <code>cs202-auth-&lt;your-netid&gt;</code>. To
+do this step, you can use <tt>scp</tt>, copy/paste, http fetch, etc.</li>
+</ol>
+
+
+
+Finally! You're ready to submit. Here's a checklist:
+
+<ul>
+<li> Make sure that you are on the <tt>lab1</tt> branch,
+and inside your <tt>lab1</tt> directory.</li>
+<li> Make sure that you have answered all written, numbered exercises above in
+<tt>answers.txt</tt>.</li>
+<li> Make sure you have answered all code exercises in the files,
+<b>with all blocks of code
+commented, as described in the <a href="https://www.cs.nyu.edu/~mwalfish/classes/15sp/labs/lab1.html#introduction">introduction</a>.</b></li>
+<li> Create a file called <tt>slack.txt</tt> noting how many
+slack hours you have used for this assignment. 
+(This is to help us agree on the number that you have used.)
+Include this file even if you didn't use any slack hours.</li>
+<li> Then do:
+
+<pre>  $ <kbd>make handin</kbd>
+</pre> 
+
+This command does the following, on your behalf. It executes <kbd>make
+clean</kbd> (which removes .o files, executables, etc.). It then
+creates a copy of your <code>lab1</code> directory, placing the
+copy in an <i>archive</i> (it uses the
+<tt>tar</tt> program for this purpose. Historical note: tar stands for
+"Tape ARchive", because the program was designed to backup files to
+tape). It then compresses the archive, creating a bundle called
+<code>lab1-handin.tgz</code> (such bundles are sometimes known as
+<i>tarballs</i>). Last, <kbd>make handin</kbd> invokes a
+script that submits this tarball to our submission server.
+You should see something like this:
+
+<pre class="samp">  CLEAN
+  CREATE lab1-handin.tgz
+  SUBMITTING ... 
+  ... progress ...
+  Submission successful
+</pre>
+
+</li><li>If you submit multiple times, we will take the latest
+submission and count slack hours accordingly.</li>
+
+</ul>
+
+<b>This completes the lab.</b>
+
+<hr>
+<p class="lastupdated">Last updated: Mon May 04 11:24:46 -0400 2015
+ [<a href="http://validator.w3.org/check?uri=referer">validate xhtml</a>]</p>
+
+
+<div id="scrollrail-vertical" class="" style="width: 9.6px; border-left-width: 0.8px;"><div id="scrollbar-vertical" style="border-radius: 4px 5.6px; box-shadow: rgba(255, 255, 255, 0.901961) 0px 0px 0.8px 0.8px; height: 26.6829px; top: 1.6px;"></div></div><div id="scrollrail-horizontal" class="disabled" style="height: 9.6px; border-top-width: 0.8px;"><div id="scrollbar-horizontal" style="border-radius: 11.2px 8px; box-shadow: rgba(255, 255, 255, 0.901961) 0px 0px 0.8px 0.8px; width: 1092px; left: 1.6px;"></div></div><st-div id="__selection-translator__"> <st-div class="__st-box__" style="display: none; position: fixed; z-index: 99999; left: 0px; top: 0px; transform: translateX(571px) translateY(367.2px);"> <st-header> <st-span class="st-icon-pin" title="固定"></st-span> <st-span class="st-icon-down-open" title="展开"></st-span> <st-span class="st-icon-cog" title="设置"></st-span> </st-header> <st-div class="__query-form__" style="display: none;"> <st-div> <textarea placeholder="输入要翻译的句子或单词"></textarea> </st-div> <st-div> <select> <option value="">自动判断</option> <option value="zh">中文</option><option value="zh-CN">中文(简体)</option><option value="zh-HK">中文(香港)</option><option value="zh-TW">中文(繁体)</option><option value="en">英语</option><option value="ja">日语</option><option value="ko">朝鲜语</option><option value="de">德语</option><option value="fr">法语</option><option value="ru">俄语</option><option value="th">泰语</option><option value="af">南非语</option><option value="ar">阿拉伯语</option><option value="az">阿塞拜疆语</option><option value="be">比利时语</option><option value="bg">保加利亚语</option><option value="ca">加泰隆语</option><option value="cs">捷克语</option><option value="cy">威尔士语</option><option value="da">丹麦语</option><option value="dv">第维埃语</option><option value="el">希腊语</option><option value="eo">世界语</option><option value="es">西班牙语</option><option value="et">爱沙尼亚语</option><option value="eu">巴士克语</option><option value="fa">法斯语</option><option value="fi">芬兰语</option><option value="fo">法罗语</option><option value="gl">加里西亚语</option><option value="gu">古吉拉特语</option><option value="he">希伯来语</option><option value="hi">印地语</option><option value="hr">克罗地亚语</option><option value="hu">匈牙利语</option><option value="hy">亚美尼亚语</option><option value="id">印度尼西亚语</option><option value="is">冰岛语</option><option value="it">意大利语</option><option value="ka">格鲁吉亚语</option><option value="kk">哈萨克语</option><option value="kn">卡纳拉语</option><option value="kok">孔卡尼语</option><option value="ky">吉尔吉斯语</option><option value="lt">立陶宛语</option><option value="lv">拉脱维亚语</option><option value="mi">毛利语</option><option value="mk">马其顿语</option><option value="mn">蒙古语</option><option value="mr">马拉地语</option><option value="ms">马来语</option><option value="mt">马耳他语</option><option value="nb">挪威语(伯克梅尔)</option><option value="nl">荷兰语</option><option value="ns">北梭托语</option><option value="pa">旁遮普语</option><option value="pl">波兰语</option><option value="pt">葡萄牙语</option><option value="qu">克丘亚语</option><option value="ro">罗马尼亚语</option><option value="sa">梵文</option><option value="se">北萨摩斯语</option><option value="sk">斯洛伐克语</option><option value="sl">斯洛文尼亚语</option><option value="sq">阿尔巴尼亚语</option><option value="sv">瑞典语</option><option value="sw">斯瓦希里语</option><option value="syr">叙利亚语</option><option value="ta">泰米尔语</option><option value="te">泰卢固语</option><option value="tl">塔加路语</option><option value="tn">茨瓦纳语</option><option value="tr">土耳其语</option><option value="ts">宗加语</option><option value="tt">鞑靼语</option><option value="uk">乌克兰语</option><option value="ur">乌都语</option><option value="uz">乌兹别克语</option><option value="vi">越南语</option><option value="xh">班图语</option><option value="zu">祖鲁语</option> </select> <st-div class="__exchange__"> <st-span class="st-icon-exchange"></st-span> </st-div> <select> <option value="">自动选择</option> <option value="zh">中文</option><option value="zh-CN">中文(简体)</option><option value="zh-HK">中文(香港)</option><option value="zh-TW">中文(繁体)</option><option value="en">英语</option><option value="ja">日语</option><option value="ko">朝鲜语</option><option value="de">德语</option><option value="fr">法语</option><option value="ru">俄语</option><option value="th">泰语</option><option value="af">南非语</option><option value="ar">阿拉伯语</option><option value="az">阿塞拜疆语</option><option value="be">比利时语</option><option value="bg">保加利亚语</option><option value="ca">加泰隆语</option><option value="cs">捷克语</option><option value="cy">威尔士语</option><option value="da">丹麦语</option><option value="dv">第维埃语</option><option value="el">希腊语</option><option value="eo">世界语</option><option value="es">西班牙语</option><option value="et">爱沙尼亚语</option><option value="eu">巴士克语</option><option value="fa">法斯语</option><option value="fi">芬兰语</option><option value="fo">法罗语</option><option value="gl">加里西亚语</option><option value="gu">古吉拉特语</option><option value="he">希伯来语</option><option value="hi">印地语</option><option value="hr">克罗地亚语</option><option value="hu">匈牙利语</option><option value="hy">亚美尼亚语</option><option value="id">印度尼西亚语</option><option value="is">冰岛语</option><option value="it">意大利语</option><option value="ka">格鲁吉亚语</option><option value="kk">哈萨克语</option><option value="kn">卡纳拉语</option><option value="kok">孔卡尼语</option><option value="ky">吉尔吉斯语</option><option value="lt">立陶宛语</option><option value="lv">拉脱维亚语</option><option value="mi">毛利语</option><option value="mk">马其顿语</option><option value="mn">蒙古语</option><option value="mr">马拉地语</option><option value="ms">马来语</option><option value="mt">马耳他语</option><option value="nb">挪威语(伯克梅尔)</option><option value="nl">荷兰语</option><option value="ns">北梭托语</option><option value="pa">旁遮普语</option><option value="pl">波兰语</option><option value="pt">葡萄牙语</option><option value="qu">克丘亚语</option><option value="ro">罗马尼亚语</option><option value="sa">梵文</option><option value="se">北萨摩斯语</option><option value="sk">斯洛伐克语</option><option value="sl">斯洛文尼亚语</option><option value="sq">阿尔巴尼亚语</option><option value="sv">瑞典语</option><option value="sw">斯瓦希里语</option><option value="syr">叙利亚语</option><option value="ta">泰米尔语</option><option value="te">泰卢固语</option><option value="tl">塔加路语</option><option value="tn">茨瓦纳语</option><option value="tr">土耳其语</option><option value="ts">宗加语</option><option value="tt">鞑靼语</option><option value="uk">乌克兰语</option><option value="ur">乌都语</option><option value="uz">乌兹别克语</option><option value="vi">越南语</option><option value="xh">班图语</option><option value="zu">祖鲁语</option> </select> </st-div> <st-div> <select> <option value="YouDao">有道翻译</option> <option value="BaiDu">百度翻译</option> <option value="Bing">必应翻译</option> <option value="Google">谷歌翻译</option> <option value="GoogleCN">谷歌翻译（国内）</option> </select> <st-div class="__action-list__"> <st-div class="__button__ __btn-translate__">翻译 <st-span class="st-icon-down-dir"></st-span> </st-div> <st-div class="__expand__"> <st-div class="__button__">朗读</st-div> <st-div class="__button__">复制</st-div> </st-div> </st-div> </st-div> </st-div> <st-div class="__translate-result__" style="display: none;">正在查询，请稍候……</st-div> <st-div class="__translate-result__"> <st-div style="display: none;"> <st-span></st-span> <st-span class="__retry__">重试</st-span> </st-div> <st-div> <st-div class="__phonetic__"> <st-span style="display: none;"></st-span> <st-span class="__copy-and-read__"> <st-span>朗读</st-span> <st-span style="display: none;">复制</st-span> </st-span> </st-div> <st-div style="display: none;"> <st-ul>  </st-ul> <st-div class="__copy-and-read__"> <st-span class="__copy-and-read__">复制</st-span> </st-div> </st-div> <st-div style="display: none;">  <st-div class="__copy-and-read__"> <st-span class="__copy-and-read__">朗读</st-span> <st-span class="__copy-and-read__">复制</st-span> </st-div> </st-div> </st-div> </st-div> <st-footer> <st-span style="display: none;">via <a target="_blank" href=""></a></st-span> </st-footer> </st-div> <st-div class="__st-btn__" style="display: none; position: fixed; z-index: 99999; left: 0px; top: 0px; transform: translateX(571px) translateY(367.2px);">译</st-div> </st-div></body><div></div></html>

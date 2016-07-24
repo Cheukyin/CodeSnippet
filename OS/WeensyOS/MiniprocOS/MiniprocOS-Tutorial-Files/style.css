@@ -1,0 +1,349 @@
+body, html { 
+  color: #000;
+  background: #fff;
+}
+
+PRE {
+  border: 2px dashed #9999cc;
+  padding: .5em .5em .5em .5em;
+}
+
+pre.machines {
+  border: 0px dashed #9999cc;
+  padding: 0em 0em 0em 0em;
+}
+
+
+a:link { 
+  background: inherit;
+  color:  #00f;
+  text-decoration: underline;
+}
+
+a:visited { 
+  background: inherit;
+  color:  #400860;
+  text-decoration: underline;
+}
+
+a.lab:link {
+    background: inherit;
+    color: #ff0000;
+    text-decoration: underline;
+}
+
+a.lab:visited {
+    background: inherit;
+    color: #ff00ee;
+    text-decoration: underline;
+}
+
+h1 { 
+  color: black;
+  background: white;
+  padding: 0;
+  margin: 0;
+  font-style: normal;
+  font-weight: normal;
+}
+
+h4 {
+    margin-bottom: 0; 
+    padding-bottom: 0; 
+}
+
+
+p.lastupdated { 
+  font-size: 70%;
+  font-style: italic;
+  margin-bottom: 0;
+}
+
+p.contact {
+  margin-top: 0;
+  font-size: 70%;
+}
+
+/*.note {
+    border: 2px dotted silver;
+    font-size: 90%;
+    padding: .5em;
+}*/
+
+.note {
+    border: 2px dotted silver;
+    font-size: 90%;
+    font-variant: italic;
+    padding: .5em .5em .5em .5em;
+}
+
+
+#topnavbar ul {
+ width: 100%;
+ float: left;
+
+ margin: 0;
+ padding: 0;
+
+ text-align: center;
+ white-space: nowrap;
+ color: #000;
+ font-family: Arial, Helvetica, sans-serif;
+ background-color: white;
+ border-top: solid 2px maroon;
+ border-bottom: solid 2px maroon;
+ clear: right;
+ margin-top: .5em;
+ margin-bottom: .5em;
+}
+
+#topnavbar ul li {
+ display: inline;
+ padding-left: 0;
+ padding-right: 0;
+}
+
+#topnavbar ul li a {
+ padding: 3px 10px;
+ text-decoration: none;
+ color: #000;
+ background-color: white;
+ float: left;
+ border-right: 1px solid black;
+}
+
+#topnavbar ul li a:hover {
+ background-color: maroon;
+ color: white;
+}
+
+#topnavbar div { 
+ clear: both;
+}
+
+div#news {
+  width: 30%;
+  float: right;
+  margin-left: 2em;
+  padding-left: 1em;
+  background-color: #fcc;
+  margin-bottom: 0.5em;
+  border: 1px solid maroon;
+}
+
+dl.idealist dt { 
+  font-weight: bold;
+}
+
+dl.idealist dt { 
+  margin-top: 0.5em;
+}
+
+dl.newslist { 
+ margin: 0;
+ padding: 0;
+}
+
+dl.newslist dt { 
+ padding-left: 0;
+ color: #000055;
+ font-weight: bold;
+ margin-bottom: 0.2em;
+}
+
+dl.newslist dd {
+  padding-bottom: 1em;
+  margin-bottom: 0;
+  margin-left: 1em;
+  padding-left: 0;
+  margin-right: 1em;
+}
+
+div#news p { 
+margin-top: 0; 
+padding-top: 0;
+}
+
+#announcements p { 
+  color: maroon;
+}
+
+#announcements h1 { 
+  color: #ffffff;
+  text-align: center;
+  font-size: 110%;
+  text-decoration: underline;
+}
+
+/* The alternating announcement colors */
+#announcements p.one { color: #ff0000; }
+#announcements p.two { color: #00ff00; }
+#announcements p.three { color: #3333ff; }
+
+.announce_date { font-weight: bold; }
+
+table.people {
+  margin-left: 10px;
+  padding: 2px;
+  border-collapse: collapse;
+  border: none;
+}
+
+table.people th { 
+  font-weight: bold;
+  text-align: left;
+  border: 0;
+/*  border-bottom: solid 2px; */
+}
+
+table.people td { 
+  padding-right: 1em;
+/*
+  border: none;
+  border-bottom: 1px solid #888;
+  padding-right: 1em;
+  padding-left: 1em;
+*/
+}
+
+table.books {
+  margin-left: 2%;
+/*  margin-bottom: 8px; */
+}
+
+table.books tr,td {
+  vertical-align: top;
+}
+
+table.assignments { 
+/*  width: 98%; */
+  margin-left: 1%;
+  margin-right: 1%;
+  border-collapse: collapse;
+}
+
+table.assignments th { 
+/*  background: #E0FFFF;*/
+  color: black;
+  border: none;
+  text-align: left;
+  width: 29%;
+}
+
+table.assignments tr,td { 
+/*  padding: 50px;
+  border-width: 50px;
+  border-style: solid;
+  border-color: black;
+  border-spacing: 0px;*/
+  border: none;
+}
+
+table.schedule {
+  width: 98%;
+  margin-left: 1%;
+  margin-right: 1%;
+  border-collapse:  collapse;
+}
+
+table.schedule th { 
+/*  background: maroon;*/
+  color: black;
+  border-width: 0px;
+  text-align: left;
+}
+
+table.Schedule tr { 
+  padding: 3px;  
+  border-width: 1px; 
+  border-spacing: 0px; 
+  border-style: solid;  
+  border-color: black;
+}
+
+table.Schedule th,td { 
+  padding: 5px;  
+  border-width: 1px; 
+  border-spacing: 0px; 
+  border: none;  
+  border-color: black;
+}
+/* Presentation:  No underlines on links in schedule unless you're
+ * moving the mouse over it. */
+
+table.schedule tr.lecture { background: white; border-bottom: 1px solid #736F6E; }
+table.schedule tr.alt { background: #E0FFFF; }
+/*table.schedule tr.lecture.alt { background: white; }*/
+/*table.schedule tr.noclass { background: #d3d3d3; }
+table.schedule tr.makeupclass { background: #FAAFBE; }*/
+table.schedule tr.noclass { color: #736F6E; }
+table.schedule tr.makeupclass { color: #FF0000; border-bottom: 1px solid #736F6E;}
+table.schedule td.readings { color: black; }
+table.schedule td.altreadings { color: black; }
+table.schedule tr.due { color: #FF0000; }
+table.schedule td.due { color: #FF0000; }
+table.schedule tr.exam    { color: #FF0000; background: #ccf; }
+table.schedule tr.recitation { background: #ccf; }
+table.schedule tr.recitation.alt { background: #ccf; }
+table.schedule tr.lechead { font-weight: bold; text-align: left; height:20px}
+
+div#textbooks { 
+  position: relative;
+  vertical-align: top;
+  float: left;
+  width: 45%; 
+  padding-left: 1em;
+  padding-right: 1em;
+  margin-right: 1em;
+}
+
+div#Grading { 
+  position: relative;
+  vertical-align: top;
+  float: right;
+  padding-left: 0;
+  padding-right: 1em;
+  width: 45%;
+}
+
+#Schedule h2 { text-align: center; }
+
+div#Schedule {
+  border-top: 1px solid maroon;
+  clear: both;
+  margin-top: 5em;
+  float:  none;
+  width: 100%;
+}
+
+div#prerequisites, div#staff, div#policies, div#resources { 
+ clear: left;
+ border-top: 1px solid maroon;
+}
+
+ul.announcements li {
+  padding-top: 0.5em;
+}
+
+ul.staff li {
+/*    margin-bottom: .5em;*/
+    line-height: 125%;
+}
+
+span.email { 
+ font-family: Courier, monospace;
+ font-size: 85%;
+}
+
+div.clear {
+  clear: both;
+}
+
+.foldc .fx, .foldo .fn {
+  display: none;
+}
+
+span.pron {
+    font-variant: small-caps;
+}
+
