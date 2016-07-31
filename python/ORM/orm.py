@@ -44,7 +44,17 @@ class Model(dict, metaclass = MetaModel):
 
     def __getattr__(self, key):
         try: return self[key]
-        except KeyError: raise AttributeError( 'No key:<%s> in %s' % (key, type(self)) )
+        except KeyError:
+            if key not in self.__key2type__:
+                raise AttributeError( 'No key:<%s> in %s' % (key, type(self)) )
+
+            if self.__key2type__[key].nullable:
+                return None
+            elif self.__key2type__[key].default is not None:
+                self[key] = self.__key2type__[key].default
+                return self[key]
+            else:
+                raise ValueError( 'key:<%s> in %s is not nullable and has no default value' % (key, type(self)) )
 
     def __setattr__(self, key, value):
         self[key] = value
