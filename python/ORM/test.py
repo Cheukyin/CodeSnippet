@@ -1,12 +1,12 @@
 import orm
-import sqlite
+import sqlitedb
 
 class User(orm.Model):
     __tablename__ = 'user'
 
-    uid = sqlite.Integer(primary_key = True, nullable = False)
-    name = sqlite.Text(nullable = False, default = 'xxx')
-    password = sqlite.Text(nullable = False, default = '123456')
+    uid = sqlitedb.Integer(primary_key = True, nullable = False)
+    name = sqlitedb.Text(nullable = False, default = 'xxx')
+    password = sqlitedb.Text(nullable = False, default = '123456')
 
 
 if __name__ == '__main__':
