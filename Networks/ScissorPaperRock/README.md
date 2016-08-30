@@ -14,7 +14,7 @@
 * 放弃，例如: `quit`
 * 登出服务器，例如: `logout`
 
-# SRC结构：
+## SRC结构：
 
 * `run.cpp`: 服务器`main`函数
 * `Server.cpp`, `Server.hpp`: 负责网络连接管理(`epoll`), 心跳检测, 消息收发, 超时检测, 与游戏逻辑进程通信
